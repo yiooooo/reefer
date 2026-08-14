@@ -164,7 +164,7 @@ body {
 .config-card {
   background: #ffffff;
   border-radius: var(--radius-md);
-  padding: 12px 20px;
+  padding: 14px 20px 12px 20px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -177,6 +177,19 @@ body {
 .config-card:hover {
   box-shadow: var(--shadow-md);
   border-color: #cbd5e1;
+}
+
+.config-card-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .config-card-tag {
@@ -700,4 +713,106 @@ body {
 .textarea-control:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+/* ==========================================================================
+   RWD Responsive Media Queries (行動裝置手持視覺適應性)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-header {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .brand-title {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .brand-title .system-name {
+    font-size: 13px;
+  }
+
+  .brand-title .vessel-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .hdr-btn {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .workspace-content {
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .top-config-bar {
+    gap: 12px;
+    width: 100%;
+  }
+
+  .config-card {
+    width: 100%;
+    padding: 14px 14px 12px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .config-card-body {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .config-item {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    justify-content: space-between;
+  }
+
+  .hdr-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0 6px;
+  }
+
+  .config-card-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .config-item {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .config-item .input-control,
+  .config-item select {
+    flex: 1;
+    width: auto !important;
+  }
+
+  .config-card-body .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
