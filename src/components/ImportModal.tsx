@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, CheckCircle } from 'lucide-react';
 import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
+import { calculateReeferDaysAndCash } from '../utils/tempGenerator';
 
 export type DuplicateMode = 'allow_duplicate' | 'update_existing' | 'skip_existing';
 
@@ -109,15 +110,34 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           const cashVal = parseFloat(getTagValue(itemNode, 'cash'));
 
           // 轉成 HTML5 <input type="datetime-local"> 格式 (YYYY-MM-DDTHH:mm)
+          const loadingDtStr = getTagValue(itemNode, 'loading_datetime');
+          const dischargeDtStr = getTagValue(itemNode, 'discharge_datetime');
+
           let loadingDatetime = '';
-          if (loadingDate) {
+          if (loadingDtStr && loadingDtStr.toLowerCase() !== 'null') {
+            const d = new Date(loadingDtStr);
+            if (!isNaN(d.getTime())) {
+              const pad = (n: number) => String(n).padStart(2, '0');
+              loadingDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            } else {
+              loadingDatetime = loadingDtStr;
+            }
+          } else if (loadingDate) {
             const h = loadingH ? loadingH.padStart(2, '0') : '00';
             const m = loadingM ? loadingM.padStart(2, '0') : '00';
             loadingDatetime = `${loadingDate}T${h}:${m}`;
           }
 
           let dischargeDatetime = '';
-          if (dischargeDate) {
+          if (dischargeDtStr && dischargeDtStr.toLowerCase() !== 'null') {
+            const d = new Date(dischargeDtStr);
+            if (!isNaN(d.getTime())) {
+              const pad = (n: number) => String(n).padStart(2, '0');
+              dischargeDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            } else {
+              dischargeDatetime = dischargeDtStr;
+            }
+          } else if (dischargeDate) {
             const h = handoverH ? handoverH.padStart(2, '0') : '00';
             const m = handoverM ? handoverM.padStart(2, '0') : '00';
             dischargeDatetime = `${dischargeDate}T${h}:${m}`;
@@ -137,7 +157,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
               tempRecords.push({
                 id: `tr-${Date.now()}-${tempRecords.length}`,
-                dateLog: dateLog || new Date().toISOString().split('T')[0],
+                dateLog: dateLog || (loadingDate ? loadingDate : ''),
                 df1: df1 || '',
                 df2: df2 || '',
                 df3: df3 || '',
@@ -167,8 +187,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             }
           }
 
-          const days = tempRecords.length > 0 ? tempRecords.length : 1;
-          const cash = !isNaN(cashVal) && cashVal > 0 ? cashVal : days >= 10 ? 800 : 400;
+          const { days: computedDays, cash: computedCash } = calculateReeferDaysAndCash(
+            loadingDatetime,
+            dischargeDatetime,
+            tempRecords.length
+          );
+          const days = computedDays;
+          const cash = !isNaN(cashVal) && cashVal > 0 ? cashVal : computedCash;
 
           importedList.push({
             containerNumber,

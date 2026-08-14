@@ -9,7 +9,8 @@ import { ExportModal } from './components/ExportModal';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
 import { getInitialState } from './utils/initialData';
 import { ReeferContainer, ReeferFormState, TempRecord } from './types/reefer';
-import { generateAutoTempRecords } from './utils/tempGenerator';
+import { generateAutoTempRecords, calculateReeferDaysAndCash } from './utils/tempGenerator';
+import { printHandoverForm } from './utils/printHandover';
 import { CheckCircle2 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -95,16 +96,7 @@ export const App: React.FC = () => {
           days: 1,
           cash: 400,
           isHidden: false,
-          tempRecords: [
-            {
-              id: `tr-${Date.now()}-${i}`,
-              dateLog: new Date().toISOString().split('T')[0],
-              df1: '',
-              df2: '',
-              df3: '',
-              remark: '',
-            },
-          ],
+          tempRecords: [],
           crewRecords: [
             { id: `cr-${Date.now()}-1`, role: 'C/O' },
             { id: `cr-${Date.now()}-2`, role: '2/O' },
@@ -154,11 +146,24 @@ export const App: React.FC = () => {
   const handleUpdateContainer = (id: string, field: keyof ReeferContainer, value: any) => {
     setFormState((prev) => ({
       ...prev,
-      containers: prev.containers.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
+      containers: prev.containers.map((c) => {
+        if (c.id === id) {
+          const updated = { ...c, [field]: value };
+          if (field === 'loadingDatetime' || field === 'dischargeDatetime') {
+            const { days, cash } = calculateReeferDaysAndCash(
+              updated.loadingDatetime,
+              updated.dischargeDatetime,
+              updated.tempRecords ? updated.tempRecords.length : 0
+            );
+            updated.days = days;
+            updated.cash = cash;
+          }
+          return updated;
+        }
+        return c;
+      }),
     }));
   };
-
-
 
   // 巡溫紀錄維護處置器
   const handleAddTempRecord = (containerId: string, count: number = 1) => {
@@ -167,16 +172,24 @@ export const App: React.FC = () => {
       containers: prev.containers.map((c) => {
         if (c.id === containerId) {
           const newRecords: TempRecord[] = [...c.tempRecords];
-          let baseDate = new Date();
+          let baseDateStr = c.loadingDatetime ? c.loadingDatetime.split('T')[0] : '';
           if (newRecords.length > 0) {
-            const lastDate = new Date(newRecords[newRecords.length - 1].dateLog);
-            if (!isNaN(lastDate.getTime())) baseDate = lastDate;
+            const lastDateStr = newRecords[newRecords.length - 1].dateLog;
+            if (lastDateStr) {
+              const lastDate = new Date(lastDateStr);
+              if (!isNaN(lastDate.getTime())) {
+                baseDateStr = lastDateStr;
+              }
+            }
           }
 
           for (let i = 0; i < count; i++) {
-            const nextDate = new Date(baseDate);
-            nextDate.setDate(baseDate.getDate() + 1 + i);
-            const dateStr = nextDate.toISOString().split('T')[0];
+            let dateStr = baseDateStr;
+            if (baseDateStr) {
+              const d = new Date(baseDateStr);
+              d.setDate(d.getDate() + (newRecords.length > 0 ? i + 1 : i));
+              dateStr = d.toISOString().split('T')[0];
+            }
 
             newRecords.push({
               id: `tr-${Date.now()}-${i}`,
@@ -188,8 +201,11 @@ export const App: React.FC = () => {
             });
           }
 
-          const days = newRecords.length;
-          const cash = days >= 10 ? 800 : 400;
+          const { days, cash } = calculateReeferDaysAndCash(
+            c.loadingDatetime,
+            c.dischargeDatetime,
+            newRecords.length
+          );
 
           return {
             ...c,
@@ -209,8 +225,11 @@ export const App: React.FC = () => {
       containers: prev.containers.map((c) => {
         if (c.id === containerId) {
           const updatedRecords = c.tempRecords.filter((r) => r.id !== recordId);
-          const days = updatedRecords.length;
-          const cash = days >= 10 ? 800 : 400;
+          const { days, cash } = calculateReeferDaysAndCash(
+            c.loadingDatetime,
+            c.dischargeDatetime,
+            updatedRecords.length
+          );
           return {
             ...c,
             tempRecords: updatedRecords,
@@ -252,14 +271,17 @@ export const App: React.FC = () => {
       ...prev,
       containers: prev.containers.map((c) => {
         if (c.id === containerId) {
-          if (!c.dischargeDatetime) return c; // 若無卸船日期則不處理
+          if (!c.loadingDatetime || !c.dischargeDatetime) return c; // 若無完整裝卸船日期則不處理
           const autoRecords = generateAutoTempRecords(
             c.settingTemp,
             c.loadingDatetime,
             c.dischargeDatetime
           );
-          const days = autoRecords.length;
-          const cash = days >= 10 ? 800 : 400;
+          const { days, cash } = calculateReeferDaysAndCash(
+            c.loadingDatetime,
+            c.dischargeDatetime,
+            autoRecords.length
+          );
 
           return {
             ...c,
@@ -277,11 +299,11 @@ export const App: React.FC = () => {
 
   const handleAutoGenerateAllTemp = () => {
     const targetContainers = formState.containers.filter(
-      (c) => !!c.dischargeDatetime && generateAutoTempRecords(c.settingTemp, c.loadingDatetime, c.dischargeDatetime).length > 0
+      (c) => !!c.loadingDatetime?.trim() && !!c.dischargeDatetime?.trim() && generateAutoTempRecords(c.settingTemp, c.loadingDatetime, c.dischargeDatetime).length > 0
     );
 
     if (targetContainers.length === 0) {
-      showToast('沒有符合條件的冷櫃（需填寫卸船日期時間）');
+      showToast('沒有符合條件的冷櫃（需同時填寫裝船與卸船日期時間）');
       return;
     }
 
@@ -290,20 +312,33 @@ export const App: React.FC = () => {
     setFormState((prev) => ({
       ...prev,
       containers: prev.containers.map((c) => {
-        if (!targetIds.has(c.id)) return c;
-        const autoRecords = generateAutoTempRecords(
-          c.settingTemp,
-          c.loadingDatetime,
-          c.dischargeDatetime
-        );
-        const days = autoRecords.length;
-        const cash = days >= 10 ? 800 : 400;
-        return {
-          ...c,
-          tempRecords: autoRecords,
-          days,
-          cash,
-        };
+        if (targetIds.has(c.id)) {
+          const autoRecords = generateAutoTempRecords(
+            c.settingTemp,
+            c.loadingDatetime,
+            c.dischargeDatetime
+          );
+          const { days, cash } = calculateReeferDaysAndCash(
+            c.loadingDatetime,
+            c.dischargeDatetime,
+            autoRecords.length
+          );
+          return {
+            ...c,
+            tempRecords: autoRecords,
+            days,
+            cash,
+          };
+        } else {
+          // 對於未符合自動生成條件的冷櫃（如有裝船無卸船），過濾掉全空白預留列
+          const cleanedRecords = (c.tempRecords || []).filter(
+            (r) => !!r.df1?.trim() || !!r.df2?.trim() || !!r.df3?.trim() || !!r.remark?.trim()
+          );
+          return {
+            ...c,
+            tempRecords: cleanedRecords,
+          };
+        }
       }),
     }));
 
@@ -326,6 +361,16 @@ export const App: React.FC = () => {
     setFormState((prev) => {
       const newContainers: ReeferContainer[] = importedData.map((item, index) => {
         const newId = `imported-${Date.now()}-${index}`;
+        const tempRecords = item.tempRecords && item.tempRecords.length > 0 ? item.tempRecords : [];
+        const { days: computedDays, cash: computedCash } = calculateReeferDaysAndCash(
+          item.loadingDatetime,
+          item.dischargeDatetime,
+          tempRecords.length
+        );
+
+        const days = item.days || computedDays;
+        const cash = item.cash || computedCash;
+
         return {
           id: newId,
           containerNumber: item.containerNumber || '',
@@ -339,22 +384,10 @@ export const App: React.FC = () => {
           dischargeDatetime: item.dischargeDatetime || '',
           dischargeTemp: item.dischargeTemp || '',
           remark1: item.remark1 || '',
-          days: item.days || (item.tempRecords ? item.tempRecords.length : 1),
-          cash: item.cash || 400,
+          days,
+          cash,
           isHidden: false,
-          tempRecords:
-            item.tempRecords && item.tempRecords.length > 0
-              ? item.tempRecords
-              : [
-                  {
-                    id: `tr-${newId}-1`,
-                    dateLog: new Date().toISOString().split('T')[0],
-                    df1: '',
-                    df2: '',
-                    df3: '',
-                    remark: '',
-                  },
-                ],
+          tempRecords,
           crewRecords:
             item.crewRecords && item.crewRecords.length > 0
               ? item.crewRecords
@@ -490,13 +523,13 @@ export const App: React.FC = () => {
           onVoyageChange={handleVoyageChange}
           onPrintTypeChange={handlePrintTypeChange}
           onPrintPortInputChange={handlePrintPortInputChange}
-          onPrint={() =>
-            showToast(
-              `準備列印 ${formState.printType === 'LOADPRINT' ? 'Loading 裝船' : 'Discharge 卸船'} 交接單 (${
-                formState.printPortInput || '全部港口'
-              })`
-            )
-          }
+          onPrint={() => {
+            if (formState.containers.length === 0) {
+              showToast('尚無冷櫃資料，無法列印交接單');
+              return;
+            }
+            printHandoverForm(formState, formState.printType, formState.printPortInput);
+          }}
         />
 
         {/* Main Layout: Combined (list+detail) + Temp Panel (on demand) */}

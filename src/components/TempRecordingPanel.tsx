@@ -28,7 +28,7 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
       <div className="panel-card">
         <div className="panel-header">
           <div className="panel-title">
-            <span className="icon-accent">📎</span> 每日溫度記錄 (Temperature Logs)
+            <span className="icon-accent">📎</span> 每日溫度記錄 (Temperature Recording)
           </div>
         </div>
         <div className="empty-placeholder">
@@ -44,13 +44,13 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
 
   const daysCount = selectedContainer.tempRecords.length;
   const bonusCash = selectedContainer.cash;
-  const hasDischargeDate = !!selectedContainer.dischargeDatetime;
+  const hasDatetimes = !!selectedContainer.loadingDatetime && !!selectedContainer.dischargeDatetime;
 
   return (
     <div className="panel-card">
       <div className="panel-header" style={{ justifyContent: 'space-between' }}>
         <div className="panel-title">
-          <span className="icon-accent">📎</span> 每日溫度記錄 (Temperature Logs)
+          <span className="icon-accent">📎</span> 每日溫度記錄 (Temperature Recording)
         </div>
         <button
           type="button"
@@ -66,8 +66,8 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
         {/* Badges & Auto-Gen Toolbar Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="badge-pill-cyan">
-              紀錄天數: {daysCount} 天
+            <span className="badge-pill-cyan" title={`航程涵蓋 ${selectedContainer.days || daysCount} 天，已紀錄 ${daysCount} 筆巡溫`}>
+              紀錄天數: {selectedContainer.days || daysCount} 天 ({daysCount} 筆紀錄)
             </span>
             <span className="badge-pill-indigo">
               計算獎金: ${bonusCash} NTD
@@ -79,20 +79,20 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
             <button
               className="btn btn-primary"
               style={{
-                background: hasDischargeDate
+                background: hasDatetimes
                   ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
                   : '#cbd5e1',
-                borderColor: hasDischargeDate ? '#10b981' : '#cbd5e1',
+                borderColor: hasDatetimes ? '#10b981' : '#cbd5e1',
                 color: '#ffffff',
-                boxShadow: hasDischargeDate ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none',
-                cursor: hasDischargeDate ? 'pointer' : 'not-allowed',
-                opacity: hasDischargeDate ? 1 : 0.6,
+                boxShadow: hasDatetimes ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none',
+                cursor: hasDatetimes ? 'pointer' : 'not-allowed',
+                opacity: hasDatetimes ? 1 : 0.6,
               }}
-              onClick={() => hasDischargeDate && onAutoGenerateTemp(selectedContainer.id)}
-              disabled={!hasDischargeDate}
-              title={hasDischargeDate
+              onClick={() => hasDatetimes && onAutoGenerateTemp(selectedContainer.id)}
+              disabled={!hasDatetimes}
+              title={hasDatetimes
                 ? '依設定溫度 (±0.5°C) 及裝卸時間範圍，一鍵自動產生此櫃巡溫紀錄'
-                : '請先填寫卸船日期時間方可自動生成溫度'}
+                : '請先同時填寫裝船與卸船日期時間方可自動生成溫度'}
             >
               <Zap size={14} />
               自動生成
@@ -111,7 +111,7 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
               title="對整筆清單中所有已填寫卸船日期時間的冷櫃，一次批次自動生成巡溫紀錄"
             >
               <Zap size={14} />
-              全部生成
+              全部清單生成
             </button>
           </div>
         </div>
@@ -161,8 +161,15 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
               </tr>
             </thead>
             <tbody>
-              {selectedContainer.tempRecords.map((rec) => (
-                <tr key={rec.id}>
+              {selectedContainer.tempRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '13px' }}>
+                    尚無巡溫紀錄。可填寫裝卸船時間點擊「自動生成」，或點擊右上方「+」按鈕手動新增。
+                  </td>
+                </tr>
+              ) : (
+                selectedContainer.tempRecords.map((rec) => (
+                  <tr key={rec.id}>
                   <td>
                     <input
                       type="date"
@@ -219,7 +226,8 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
                     </button>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
         </div>

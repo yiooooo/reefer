@@ -8,6 +8,89 @@ interface ExportModalProps {
   formState: ReeferFormState;
 }
 
+export const buildExportXml = (formState: ReeferFormState): string => {
+  const totalCash = formState.containers.reduce((acc, c) => acc + (c.cash || 0), 0);
+  const countLong = formState.containers.filter((c) => c.cash === 800).length;
+  const countShort = formState.containers.filter((c) => c.cash === 400).length;
+
+  const group1Xml = formState.containers
+    .map((cnt) => {
+      const group2Xml = (cnt.tempRecords || [])
+        .map(
+          (tr) => `    <GROUP2>
+      <DF_1>${tr.df1 ?? ''}</DF_1>
+      <DF_2>${tr.df2 ?? ''}</DF_2>
+      <DF_3>${tr.df3 ?? ''}</DF_3>
+      <DATE_LOG>${tr.dateLog ?? ''}</DATE_LOG>
+      <REMARK>${tr.remark ?? ''}</REMARK>
+    </GROUP2>`
+        )
+        .join('\n');
+
+      const crewList =
+        cnt.crewRecords && cnt.crewRecords.length > 0
+          ? cnt.crewRecords
+          : [
+              { id: '1', role: 'C/O' },
+              { id: '2', role: '2/O' },
+              { id: '3', role: '3/O' },
+              { id: '4', role: '3/E' },
+            ];
+
+      const group3Xml = crewList
+        .map((cr) => {
+          let roleStr = cr.role;
+          if (roleStr === 'C/O') roleStr = 'CO';
+          else if (roleStr === '2/O') roleStr = '2O';
+          else if (roleStr === '3/O') roleStr = '3O';
+          else if (roleStr === '3E') roleStr = '3E';
+          return `    <GROUP3><RECORD>${roleStr}</RECORD></GROUP3>`;
+        })
+        .join('\n');
+
+      const loadingDt = cnt.loadingDatetime ? cnt.loadingDatetime : 'null';
+      const dischargeDt = cnt.dischargeDatetime ? cnt.dischargeDatetime : 'null';
+
+      return `  <GROUP1>
+    <CONTAINER_NUMBER>${cnt.containerNumber ?? ''}</CONTAINER_NUMBER>
+    <SETTING_TEMP>${cnt.settingTemp ?? ''}</SETTING_TEMP>
+    <COMMODITY>${cnt.commodity ?? ''}</COMMODITY>
+    <LOADING_LOCATION>${cnt.loadingLocation ?? ''}</LOADING_LOCATION>
+    <LOADING_PORT>${cnt.loadingPort ?? ''}</LOADING_PORT>
+    <LOADING_DATETIME>${loadingDt}</LOADING_DATETIME>
+    <LOADING_TEMP>${cnt.loadingTemp ?? ''}</LOADING_TEMP>
+    <DISCHARGE_PORT>${cnt.dischargePort ?? ''}</DISCHARGE_PORT>
+    <DISCHARGE_DATETIME>${dischargeDt}</DISCHARGE_DATETIME>
+    <DISCHARGE_TEMP>${cnt.dischargeTemp ?? ''}</DISCHARGE_TEMP>
+    <REMARK_1>${cnt.remark1 ?? ''}</REMARK_1>
+    <DAYS>${cnt.days ?? 0}</DAYS>
+    <CASH>${cnt.cash ?? 400}</CASH>
+    <ISHIDDEN>${cnt.isHidden ? 'true' : 'false'}</ISHIDDEN>
+${group2Xml ? group2Xml + '\n' : ''}${group3Xml}
+  </GROUP1>`;
+    })
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<form>
+  <CATEGORY>${formState.category || 'WEB_FFS'}</CATEGORY>
+  <FORM_TYPE>${formState.formType || 'reefer_bonus'}</FORM_TYPE>
+  <IMO>${formState.imo || '9319131'}</IMO>
+  <SHIP_NAME>${formState.vesselName || ''}</SHIP_NAME>
+  <VESSEL_STATUS>${formState.vesselStatus || 'own vessel'}</VESSEL_STATUS>
+  <VOYAGE>${formState.voyage || ''}</VOYAGE>
+  <COUNT>null</COUNT>
+  <TOTALCASH>${totalCash}</TOTALCASH>
+  <COUNT_LONG>${countLong}</COUNT_LONG>
+  <COUNT_SHORT>${countShort}</COUNT_SHORT>
+  <PRINT_PORT>${formState.printPortInput || ''}</PRINT_PORT>
+  <QUERY_TYPE>${formState.queryType || 'DISCHARGE'}</QUERY_TYPE>
+  <PRINT_TYPE>${formState.printType || 'LOADPRINT'}</PRINT_TYPE>
+  <IMPORT_TYPE>${formState.importType || 'SUPERCARGO'}</IMPORT_TYPE>
+${group1Xml}
+</form>`;
+};
+
 export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
   onClose,
@@ -17,37 +100,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   if (!isOpen) return null;
 
-  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<REEFER_BONUS_FORM>
-  <CATEGORY>${formState.category}</CATEGORY>
-  <FORM_TYPE>${formState.formType}</FORM_TYPE>
-  <IMO>${formState.imo}</IMO>
-  <VESSEL_NAME>${formState.vesselName}</VESSEL_NAME>
-  <VESSEL_STATUS>${formState.vesselStatus}</VESSEL_STATUS>
-  <VOYAGE>${formState.voyage}</VOYAGE>
-  <TOTALCASH>${formState.containers.reduce((acc, c) => acc + c.cash, 0)}</TOTALCASH>
-  <CONTAINERS_COUNT>${formState.containers.length}</CONTAINERS_COUNT>
-  <GROUP1>
-${formState.containers
-  .map(
-    (cnt) => `    <GROUP1_ITEM>
-      <CONTAINER_NUMBER>${cnt.containerNumber}</CONTAINER_NUMBER>
-      <SETTING_TEMP>${cnt.settingTemp}</SETTING_TEMP>
-      <COMMODITY>${cnt.commodity}</COMMODITY>
-      <LOADING_LOCATION>${cnt.loadingLocation}</LOADING_LOCATION>
-      <LOADING_PORT>${cnt.loadingPort}</LOADING_PORT>
-      <LOADING_DATETIME>${cnt.loadingDatetime}</LOADING_DATETIME>
-      <LOADING_TEMP>${cnt.loadingTemp}</LOADING_TEMP>
-      <DISCHARGE_PORT>${cnt.dischargePort}</DISCHARGE_PORT>
-      <DISCHARGE_DATETIME>${cnt.dischargeDatetime}</DISCHARGE_DATETIME>
-      <DISCHARGE_TEMP>${cnt.dischargeTemp}</DISCHARGE_TEMP>
-      <DAYS>${cnt.days}</DAYS>
-      <CASH>${cnt.cash}</CASH>
-    </GROUP1_ITEM>`
-  )
-  .join('\n')}
-  </GROUP1>
-</REEFER_BONUS_FORM>`;
+  const xmlContent = buildExportXml(formState);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(xmlContent);
@@ -60,7 +113,13 @@ ${formState.containers
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Reefer_Bonus_${formState.voyage || 'Draft'}.xml`;
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const vesselStr = (formState.vesselName || 'SHIP').trim();
+
+    a.download = `${vesselStr}_reefer_bonus_${timestamp}.xml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -86,12 +145,12 @@ ${formState.containers
 
         <div className="modal-body">
           <div className="form-group">
-            <label className="form-label">XML 報表內容預覽</label>
+            <label className="form-label">XML 報表內容預覽 (舊專案格式)</label>
             <textarea
               className="textarea-control"
               readOnly
               value={xmlContent}
-              style={{ minHeight: '220px', background: '#f8fafc' }}
+              style={{ minHeight: '260px', background: '#f8fafc', fontFamily: 'monospace', fontSize: '11px' }}
             />
           </div>
         </div>
