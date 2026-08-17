@@ -242,7 +242,7 @@ body {
   min-width: 0;
 }
 
-/* The combined card (list + detail side by side) */
+/* The combined card (list & details unified) */
 .combined-wrapper {
   flex: 1;
   min-width: 0;
@@ -251,17 +251,16 @@ body {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   min-height: 560px;
   overflow: visible;       /* allow table to overflow and scroll */
 }
 
 /* List sub-column inside combined wrapper */
 .list-section {
-  width: 650px;
-  min-width: 650px;
-  flex-shrink: 0;
-  border-right: 1px solid #e2e8f0;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -277,14 +276,6 @@ body {
   flex: 1;
 }
 
-/* Detail sub-column inside combined wrapper */
-.detail-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
 /* Temperature panel — right column, fixed width */
 .temp-section {
   width: 480px;
@@ -293,10 +284,6 @@ body {
 
 /* ─── RWD breakpoints ─── */
 @media (max-width: 1400px) {
-  .list-section {
-    width: 560px;
-    min-width: 560px;
-  }
   .temp-section {
     width: 400px;
   }
@@ -313,11 +300,6 @@ body {
   .list-section {
     width: 100%;
     min-width: unset;
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  .detail-section {
-    width: 100%;
   }
   .temp-section {
     width: 100%;

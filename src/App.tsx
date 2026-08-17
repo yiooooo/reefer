@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { BasicInfoCard } from './components/BasicInfoCard';
 import { ReeferListPanel } from './components/ReeferListPanel';
-import { ReeferDetailPanel } from './components/ReeferDetailPanel';
 import { TempRecordingPanel } from './components/TempRecordingPanel';
 import { ImportModal } from './components/ImportModal';
 import { ExportModal } from './components/ExportModal';
@@ -532,10 +531,10 @@ export const App: React.FC = () => {
           }}
         />
 
-        {/* Main Layout: Combined (list+detail) + Temp Panel (on demand) */}
+        {/* Main Layout: Unified List Panel + Temp Panel (on demand) */}
         <div className="main-layout">
 
-          {/* Combined card: list on left, detail on right */}
+          {/* Combined card: unified list and detail in one table */}
           <div className="combined-wrapper">
             <div className="list-section">
               <ReeferListPanel
@@ -561,13 +560,6 @@ export const App: React.FC = () => {
                     setShowTempPanel(true);
                   }
                 }}
-              />
-            </div>
-
-            <div className="detail-section">
-              <ReeferDetailPanel
-                selectedContainer={selectedContainer}
-                onUpdateContainer={handleUpdateContainer}
               />
             </div>
           </div>

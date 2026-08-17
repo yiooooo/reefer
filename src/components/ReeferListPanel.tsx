@@ -4,6 +4,8 @@ import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XC
 
 type FilterMode = 'all' | 'discharged' | 'not_discharged';
 
+const FIXED_CREW_ROLES = ['C/O', '2/O', '3/O', '3/E'];
+
 interface ReeferListPanelProps {
   containers: ReeferContainer[];
   selectedContainerId: string | null;
@@ -73,8 +75,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
 
   const STATUS_DOT: Record<string, { color: string; title: string }> = {
     discharged: { color: '#ef4444', title: '已卸櫃' },
-    onboard:    { color: '#f59e0b', title: '已上船未卸櫃' },
-    waiting:    { color: '#22c55e', title: '未裝船' },
+    onboard: { color: '#f59e0b', title: '已上船未卸櫃' },
+    waiting: { color: '#22c55e', title: '未裝船' },
   };
 
   const isContainerDischarged = (c: ReeferContainer) =>
@@ -121,13 +123,41 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
       </div>
 
       <div className="panel-body">
-        {/* KPI Summary Badges Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        {/* KPI Summary Badges & Crew Chips Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div className="badge-total-cash">
             <span className="amount">總金額 : ${totalCash} NTD</span>
             <span className="subtext">
               長程櫃: {longCount} ｜ 短程櫃: {shortCount}
             </span>
+          </div>
+
+          {/* Crew Chips */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>
+              巡櫃人員：
+            </span>
+            <div className="crew-chips-container" style={{ display: 'flex', gap: '6px' }}>
+              {FIXED_CREW_ROLES.map((role) => (
+                <div
+                  key={role}
+                  className="crew-chip"
+                  style={{
+                    cursor: 'default',
+                    userSelect: 'none',
+                    padding: '4px 10px',
+                    fontWeight: 700,
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: '#334155',
+                  }}
+                >
+                  {role}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -349,8 +379,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
               {hasActiveFilters
                 ? `查無符合條件的冷櫃 (${containers.length} 筆資料中無符合者)`
                 : filterMode === 'discharged'
-                ? '目前無已卸櫃資料'
-                : '目前無未卸櫃資料'}
+                  ? '目前無已卸櫃資料'
+                  : '目前無未卸櫃資料'}
             </div>
             {hasActiveFilters && (
               <button
@@ -367,7 +397,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             )}
           </div>
         ) : (
-          <div className="data-table-wrapper" style={{ maxHeight: '420px', overflowY: 'auto', overflowX: 'auto' }}>
+          <div className="data-table-wrapper" style={{ maxHeight: '520px', overflowY: 'auto', overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -375,10 +405,16 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                   <th style={{ width: '10px' }}>#</th>
                   <th style={{ minWidth: '95px' }}>櫃號</th>
                   <th style={{ minWidth: '65px' }}>裝載位置</th>
-                  <th style={{ width: '52px' }}>設定溫度℃</th>
-                  <th style={{ width: '48px' }}>卸船港</th>
+                  <th style={{ width: '52px' }}>設定溫℃</th>
+                  <th style={{ minWidth: '100px' }}>貨物名稱</th>
+                  <th style={{ width: '65px' }}>通風開度%</th>
                   <th style={{ width: '48px' }}>裝船港</th>
-                  <th style={{ width: '28px', textAlign: 'center' }} title="溫度記錄">
+                  <th style={{ minWidth: '140px' }}>裝船日期時間</th>
+                  <th style={{ width: '50px' }}>裝船溫℃</th>
+                  <th style={{ width: '48px' }}>卸船港</th>
+                  <th style={{ minWidth: '140px' }}>卸船日期時間</th>
+                  <th style={{ width: '50px' }}>卸船溫℃</th>
+                  <th style={{ width: '28px', textAlign: 'center' }} title="巡溫記錄">
                     <Thermometer size={13} color="#0ea5e9" />
                   </th>
                 </tr>
@@ -412,6 +448,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         />
                       </td>
                       <td style={{ fontWeight: 700, color: '#94a3b8', width: '10px' }}>{index + 1}</td>
+
+                      {/* 櫃號 */}
                       <td>
                         <input
                           type="text"
@@ -426,6 +464,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           }}
                         />
                       </td>
+
+                      {/* 裝載位置 */}
                       <td>
                         <input
                           type="text"
@@ -440,6 +480,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           }}
                         />
                       </td>
+
+                      {/* 設定溫度℃ */}
                       <td>
                         <input
                           type="text"
@@ -453,24 +495,43 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           }}
                         />
                       </td>
+
+                      {/* 貨物名稱 */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
-                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
-                          value={cnt.dischargePort}
-                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargePort', e.target.value)}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '100px' }}
+                          value={cnt.commodity}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'commodity', e.target.value)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
                           }}
                         />
                       </td>
+
+                      {/* 通風開度% */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
-                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '65px' }}
+                          value={cnt.remark1}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'remark1', e.target.value)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 裝船港 */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '48px' }}
                           value={cnt.loadingPort}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingPort', e.target.value)}
                           onClick={(e) => {
@@ -479,6 +540,83 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           }}
                         />
                       </td>
+
+                      {/* 裝船日期時間 */}
+                      <td>
+                        <input
+                          type="datetime-local"
+                          className="input-control"
+                          style={{ height: '28px', fontSize: '11px', padding: '2px 4px', width: '140px' }}
+                          value={cnt.loadingDatetime}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'loadingDatetime', e.target.value)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 裝船溫℃ */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
+                          value={cnt.loadingTemp}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'loadingTemp', e.target.value)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 卸船港 */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '48px' }}
+                          value={cnt.dischargePort}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargePort', e.target.value)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 卸船日期時間 */}
+                      <td>
+                        <input
+                          type="datetime-local"
+                          className="input-control"
+                          style={{ height: '28px', fontSize: '11px', padding: '2px 4px', width: '140px' }}
+                          value={cnt.dischargeDatetime}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargeDatetime', e.target.value)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 卸船溫℃ */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
+                          value={cnt.dischargeTemp}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', e.target.value)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 巡溫紀錄按鈕 */}
                       <td style={{ textAlign: 'center' }}>
                         <button
                           type="button"
