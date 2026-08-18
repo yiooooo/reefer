@@ -532,7 +532,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                       </td>
 
                       {/* 裝船日期時間 */}
-                      <td style={{ minWidth: '150px' }} onClick={(e) => { e.stopPropagation(); onSelectContainer(cnt.id); }}>
+                      <td style={{ minWidth: '150px' }} onClick={() => onSelectContainer(cnt.id)}>
                         <DatetimePicker24h
                           value={cnt.loadingDatetime}
                           onChange={(val) => onUpdateContainer(cnt.id, 'loadingDatetime', val)}
@@ -571,7 +571,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                       </td>
 
                       {/* 卸船日期時間 */}
-                      <td style={{ minWidth: '150px' }} onClick={(e) => { e.stopPropagation(); onSelectContainer(cnt.id); }}>
+                      <td style={{ minWidth: '150px' }} onClick={() => onSelectContainer(cnt.id)}>
                         <DatetimePicker24h
                           value={cnt.dischargeDatetime}
                           onChange={(val) => onUpdateContainer(cnt.id, 'dischargeDatetime', val)}
