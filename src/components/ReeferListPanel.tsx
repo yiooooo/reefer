@@ -110,6 +110,96 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   const hasActiveFilters = Boolean(selectedDischargePort || selectedLoadingPort || searchKeyword.trim());
   const notDischargedCount = containers.length - dischargedCount;
 
+  const handleInputKeyDown = (
+    e: React.KeyboardEvent<HTMLElement>,
+    rowIndex: number,
+    colIndex: number
+  ) => {
+    const { key, shiftKey } = e;
+    const maxCols = 11;
+
+    const focusTargetElement = (targetContainer: HTMLElement | null) => {
+      if (!targetContainer) return;
+      const targetInput = targetContainer.matches('input, textarea')
+        ? targetContainer
+        : targetContainer.querySelector<HTMLElement>('input, .MuiInputBase-input, [tabindex="0"]');
+
+      if (targetInput) {
+        targetInput.focus();
+        if ('select' in targetInput && typeof (targetInput as any).select === 'function') {
+          (targetInput as any).select();
+        }
+      } else {
+        targetContainer.focus();
+      }
+    };
+
+    // 1. 上下鍵與 Enter 鍵：固定上下換列 (包含日期選擇器)
+    if (['ArrowUp', 'ArrowDown', 'Enter'].includes(key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = (e.currentTarget as HTMLElement).closest('.panel-card') || document;
+      const targetRow = key === 'ArrowUp' ? rowIndex - 1 : rowIndex + 1;
+      const targetContainer = card.querySelector<HTMLElement>(`[data-row="${targetRow}"][data-col="${colIndex}"]`);
+      focusTargetElement(targetContainer);
+      return;
+    }
+
+    // 2. Tab 與 Shift+Tab：極速前後跳欄 (跨列連動)
+    if (key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = (e.currentTarget as HTMLElement).closest('.panel-card') || document;
+      let targetRow = rowIndex;
+      let targetCol = shiftKey ? colIndex - 1 : colIndex + 1;
+
+      if (targetCol < 0) {
+        targetRow = rowIndex - 1;
+        targetCol = maxCols - 1;
+      } else if (targetCol >= maxCols) {
+        targetRow = rowIndex + 1;
+        targetCol = 0;
+      }
+
+      const targetContainer = card.querySelector<HTMLElement>(`[data-row="${targetRow}"][data-col="${targetCol}"]`);
+      focusTargetElement(targetContainer);
+      return;
+    }
+
+    // 3. 左右鍵 (ArrowLeft / ArrowRight)
+    if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      const input = e.currentTarget as HTMLInputElement;
+      const isMuiSection =
+        input.tagName !== 'INPUT' ||
+        input.classList?.contains('MuiPickersSectionList-root') ||
+        Boolean(input.closest?.('.MuiPickersSectionList-root')) ||
+        Boolean(input.closest?.('.MuiInputBase-root'));
+
+      let isAtStart = false;
+      let isAtEnd = false;
+
+      if (isMuiSection) {
+        isAtStart = true;
+        isAtEnd = true;
+      } else if ('selectionStart' in input && typeof input.selectionStart === 'number') {
+        isAtStart = input.selectionStart === 0 && input.selectionEnd === 0;
+        isAtEnd = input.selectionStart === (input.value?.length || 0) && input.selectionEnd === (input.value?.length || 0);
+      } else {
+        isAtStart = true;
+        isAtEnd = true;
+      }
+
+      if ((key === 'ArrowLeft' && isAtStart) || (key === 'ArrowRight' && isAtEnd)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = input.closest('.panel-card') || document;
+        const targetCol = key === 'ArrowLeft' ? colIndex - 1 : colIndex + 1;
+        const targetContainer = card.querySelector<HTMLElement>(`[data-row="${rowIndex}"][data-col="${targetCol}"]`);
+        focusTargetElement(targetContainer);
+      }
+    }
+  };
+
   return (
     <div className="panel-card">
       <div className="panel-header">
@@ -443,9 +533,12 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={0}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '95px' }}
                           value={cnt.containerNumber}
                           onChange={(e) => onUpdateContainer(cnt.id, 'containerNumber', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 0)}
                           placeholder="請輸入櫃號"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -459,9 +552,12 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={1}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '65px' }}
                           value={cnt.loadingLocation}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingLocation', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 1)}
                           placeholder="位置"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -475,10 +571,13 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={2}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '52px' }}
                           value={cnt.settingTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'settingTemp', e.target.value)}
                           onBlur={(e) => onUpdateContainer(cnt.id, 'settingTemp', formatTempNumber(e.target.value))}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 2)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -491,9 +590,12 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={3}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '100px' }}
                           value={cnt.commodity}
                           onChange={(e) => onUpdateContainer(cnt.id, 'commodity', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 3)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -506,9 +608,12 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={4}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '65px' }}
                           value={cnt.remark1}
                           onChange={(e) => onUpdateContainer(cnt.id, 'remark1', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 4)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -521,9 +626,12 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={5}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '48px' }}
                           value={cnt.loadingPort}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingPort', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 5)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -536,6 +644,9 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <DatetimePicker24h
                           value={cnt.loadingDatetime}
                           onChange={(val) => onUpdateContainer(cnt.id, 'loadingDatetime', val)}
+                          dataRow={index}
+                          dataCol={6}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 6)}
                         />
                       </td>
 
@@ -544,10 +655,13 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={7}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
                           value={cnt.loadingTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingTemp', e.target.value)}
                           onBlur={(e) => onUpdateContainer(cnt.id, 'loadingTemp', formatTempNumber(e.target.value))}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 7)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -560,9 +674,12 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={8}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '48px' }}
                           value={cnt.dischargePort}
                           onChange={(e) => onUpdateContainer(cnt.id, 'dischargePort', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 8)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -575,6 +692,9 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <DatetimePicker24h
                           value={cnt.dischargeDatetime}
                           onChange={(val) => onUpdateContainer(cnt.id, 'dischargeDatetime', val)}
+                          dataRow={index}
+                          dataCol={9}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 9)}
                         />
                       </td>
 
@@ -583,10 +703,13 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={10}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
                           value={cnt.dischargeTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', e.target.value)}
                           onBlur={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', formatTempNumber(e.target.value))}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 10)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);

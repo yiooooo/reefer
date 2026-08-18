@@ -14,6 +14,9 @@ export interface DatetimePicker24hProps {
   className?: string;
   style?: React.CSSProperties;
   width?: string;
+  dataRow?: number;
+  dataCol?: number;
+  onKeyDown?: (e: React.KeyboardEvent<any>) => void;
 }
 
 export const DatetimePicker24h: React.FC<DatetimePicker24hProps> = ({
@@ -23,6 +26,9 @@ export const DatetimePicker24h: React.FC<DatetimePicker24hProps> = ({
   placeholder,
   style,
   width,
+  dataRow,
+  dataCol,
+  onKeyDown,
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -54,6 +60,8 @@ export const DatetimePicker24h: React.FC<DatetimePicker24hProps> = ({
       variant: 'outlined' as const,
       inputProps: {
         placeholder: defaultPlaceholder,
+        'data-row': dataRow,
+        'data-col': dataCol,
       },
       onClick: () => setOpen(true),
       sx: {
@@ -172,34 +180,41 @@ export const DatetimePicker24h: React.FC<DatetimePicker24hProps> = ({
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      {showTime ? (
-        <DateTimePicker
-          open={open}
-          onOpen={() => setOpen(true)}
-          onClose={() => setOpen(false)}
-          closeOnSelect={true}
-          value={dayjsValue}
-          onChange={handleChange}
-          ampm={false} // 24 小時制
-          timeSteps={{ hours: 1, minutes: 1 }} // 包含 0~59 分鐘
-          views={['year', 'month', 'day', 'hours', 'minutes']}
-          format={dateFormat}
-          slotProps={commonSlotProps}
-        />
-      ) : (
-        <DatePicker
-          open={open}
-          onOpen={() => setOpen(true)}
-          onClose={() => setOpen(false)}
-          closeOnSelect={true}
-          value={dayjsValue}
-          onChange={handleChange}
-          views={['year', 'month', 'day']}
-          format={dateFormat}
-          slotProps={commonSlotProps}
-        />
-      )}
-    </LocalizationProvider>
+    <div
+      data-row={dataRow}
+      data-col={dataCol}
+      onKeyDownCapture={onKeyDown}
+      style={{ display: 'inline-block', verticalAlign: 'middle', width: defaultWidth }}
+    >
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        {showTime ? (
+          <DateTimePicker
+            open={open}
+            onOpen={() => setOpen(true)}
+            onClose={() => setOpen(false)}
+            closeOnSelect={true}
+            value={dayjsValue}
+            onChange={handleChange}
+            ampm={false} // 24 小時制
+            timeSteps={{ hours: 1, minutes: 1 }} // 包含 0~59 分鐘
+            views={['year', 'month', 'day', 'hours', 'minutes']}
+            format={dateFormat}
+            slotProps={commonSlotProps}
+          />
+        ) : (
+          <DatePicker
+            open={open}
+            onOpen={() => setOpen(true)}
+            onClose={() => setOpen(false)}
+            closeOnSelect={true}
+            value={dayjsValue}
+            onChange={handleChange}
+            views={['year', 'month', 'day']}
+            format={dateFormat}
+            slotProps={commonSlotProps}
+          />
+        )}
+      </LocalizationProvider>
+    </div>
   );
 };
