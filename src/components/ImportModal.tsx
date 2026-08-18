@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, CheckCircle } from 'lucide-react';
+import { X, Upload, CheckCircle, FileText } from 'lucide-react';
 import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
 import { calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
 
@@ -47,7 +47,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const handleImportSubmit = () => {
     const text = rawText.trim();
     if (!text) {
-      alert('請先選擇並上傳檔案！');
+      alert('請先選擇上傳檔案，或在下方文字框中貼上內容！');
       return;
     }
 
@@ -280,7 +280,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
 
     if (importedList.length === 0) {
-      alert('無法解析檔案內容，請確認檔案格式是否正確。');
+      alert('無法解析輸入的資料內容，請確認格式是否正確。');
       return;
     }
 
@@ -290,11 +290,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" style={{ maxWidth: '640px', width: '92%' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Upload size={18} color="#0284c7" />
-            Import File 匯入冷櫃與巡櫃資料
+            Import File / Text 匯入冷櫃與巡櫃資料
           </span>
           <button
             type="button"
@@ -305,7 +305,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+          {/* 上傳檔案區塊 */}
           <div className="form-group">
             <label className="form-label">選擇檔案上傳 (.xml / .txt)</label>
             <input
@@ -371,6 +372,31 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               </label>
             </div>
           </div>
+
+          {/* 貼上文字 / XML 內容欄位 (置於最下方) */}
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileText size={14} color="#0284c7" />
+              或直接在此貼上 XML / TXT 內容
+            </label>
+            <textarea
+              className="input-control"
+              style={{
+                width: '100%',
+                height: '140px',
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                padding: '8px',
+                resize: 'vertical',
+              }}
+              placeholder="請直接剪貼 XML 文字內容於此..."
+              value={rawText}
+              onChange={(e) => {
+                setRawText(e.target.value);
+                if (fileName) setFileName('');
+              }}
+            />
+          </div>
         </div>
 
         <div className="modal-footer">
@@ -385,4 +411,3 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     </div>
   );
 };
-
