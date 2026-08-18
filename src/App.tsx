@@ -525,6 +525,9 @@ export const App: React.FC = () => {
           voyage={formState.voyage}
           printType={formState.printType}
           printPortInput={formState.printPortInput}
+          totalCash={totalCash}
+          longCount={longCount}
+          shortCount={shortCount}
           onVesselStatusChange={handleVesselStatusChange}
           onVoyageChange={handleVoyageChange}
           onPrintTypeChange={handlePrintTypeChange}
@@ -547,9 +550,6 @@ export const App: React.FC = () => {
               <ReeferListPanel
                 containers={formState.containers}
                 selectedContainerId={formState.selectedContainerId}
-                totalCash={totalCash}
-                longCount={longCount}
-                shortCount={shortCount}
                 dischargedCount={dischargedCount}
                 onSelectContainer={handleSelectContainer}
                 onAddContainer={handleAddContainer}

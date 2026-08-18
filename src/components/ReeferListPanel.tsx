@@ -11,9 +11,6 @@ const FIXED_CREW_ROLES = ['C/O', '2/O', '3/O', '3/E'];
 interface ReeferListPanelProps {
   containers: ReeferContainer[];
   selectedContainerId: string | null;
-  totalCash: number;
-  longCount: number;
-  shortCount: number;
   dischargedCount: number;
   onSelectContainer: (id: string) => void;
   onAddContainer: (count: number) => void;
@@ -27,9 +24,6 @@ interface ReeferListPanelProps {
 export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   containers,
   selectedContainerId,
-  totalCash,
-  longCount,
-  shortCount,
   dischargedCount,
   onSelectContainer,
   onAddContainer,
@@ -126,14 +120,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
 
       <div className="panel-body">
         {/* KPI Summary Badges & Crew Chips Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <div className="badge-total-cash">
-            <span className="amount">總金額 : ${totalCash} NTD</span>
-            <span className="subtext">
-              長程櫃: {longCount} ｜ 短程櫃: {shortCount}
-            </span>
-          </div>
-
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
           {/* Crew Chips */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>

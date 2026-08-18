@@ -6,6 +6,9 @@ interface BasicInfoCardProps {
   voyage: string;
   printType: 'LOADPRINT' | 'DISCHARGEPRINT';
   printPortInput: string;
+  totalCash?: number;
+  longCount?: number;
+  shortCount?: number;
   onVesselStatusChange: (status: 'own vessel' | 'chartered vessel') => void;
   onVoyageChange: (voyage: string) => void;
   onPrintTypeChange: (type: 'LOADPRINT' | 'DISCHARGEPRINT') => void;
@@ -18,6 +21,9 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
   voyage,
   printType,
   printPortInput,
+  totalCash,
+  longCount,
+  shortCount,
   onVesselStatusChange,
   onVoyageChange,
   onPrintTypeChange,
@@ -99,6 +105,16 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 總金額 Badge Card (位置改移至船岸交接單右側) */}
+      {totalCash !== undefined && (
+        <div className="badge-total-cash" style={{ alignSelf: 'stretch', justifyContent: 'center' }}>
+          <span className="amount">總金額 : ${totalCash} NTD</span>
+          <span className="subtext">
+            長程櫃: {longCount || 0} ｜ 短程櫃: {shortCount || 0}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
