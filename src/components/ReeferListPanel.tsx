@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ReeferContainer } from '../types/reefer';
 import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
+import { formatTempNumber } from '../utils/tempGenerator';
 
 type FilterMode = 'all' | 'discharged' | 'not_discharged';
 
@@ -490,6 +491,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '52px' }}
                           value={cnt.settingTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'settingTemp', e.target.value)}
+                          onBlur={(e) => onUpdateContainer(cnt.id, 'settingTemp', formatTempNumber(e.target.value))}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -558,6 +560,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
                           value={cnt.loadingTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingTemp', e.target.value)}
+                          onBlur={(e) => onUpdateContainer(cnt.id, 'loadingTemp', formatTempNumber(e.target.value))}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -596,6 +599,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
                           value={cnt.dischargeTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', e.target.value)}
+                          onBlur={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', formatTempNumber(e.target.value))}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);

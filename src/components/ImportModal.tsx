@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, CheckCircle } from 'lucide-react';
 import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
-import { calculateReeferDaysAndCash } from '../utils/tempGenerator';
+import { calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
 
 export type DuplicateMode = 'allow_duplicate' | 'update_existing' | 'skip_existing';
 
@@ -91,7 +91,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
         group1Nodes.forEach((itemNode) => {
           const containerNumber = getTagValue(itemNode, 'container_number');
-          const settingTemp = getTagValue(itemNode, 'setting_temp');
+          const settingTemp = formatTempNumber(getTagValue(itemNode, 'setting_temp'));
           const commodity = getTagValue(itemNode, 'commodity');
           const loadingLocation = getTagValue(itemNode, 'loading_location');
           const loadingPort = getTagValue(itemNode, 'loading_port');
@@ -104,8 +104,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           const handoverH = getTagValue(itemNode, 'handover_timeh') || getTagValue(itemNode, 'discharge_timeh');
           const handoverM = getTagValue(itemNode, 'handover_timem') || getTagValue(itemNode, 'discharge_timem');
 
-          const loadingTemp = getTagValue(itemNode, 'loading_temp');
-          const dischargeTemp = getTagValue(itemNode, 'discharge_temp');
+          const loadingTemp = formatTempNumber(getTagValue(itemNode, 'loading_temp'));
+          const dischargeTemp = formatTempNumber(getTagValue(itemNode, 'discharge_temp'));
           const remark1 = getTagValue(itemNode, 'remark_1');
           const cashVal = parseFloat(getTagValue(itemNode, 'cash'));
 
@@ -152,9 +152,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             const child = itemChildren[j];
             if (child.localName.toLowerCase() === 'group2') {
               const dateLog = getTagValue(child, 'date_log') || getTagValue(child, 'date');
-              const df1 = getTagValue(child, 'df_1');
-              const df2 = getTagValue(child, 'df_2');
-              const df3 = getTagValue(child, 'df_3');
+              const df1 = formatTempNumber(getTagValue(child, 'df_1'));
+              const df2 = formatTempNumber(getTagValue(child, 'df_2'));
+              const df3 = formatTempNumber(getTagValue(child, 'df_3'));
               const remark = getTagValue(child, 'remark');
 
               tempRecords.push({

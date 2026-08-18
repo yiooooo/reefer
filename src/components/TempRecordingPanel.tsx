@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ReeferContainer, TempRecord } from '../types/reefer';
 import { Plus, Trash2, Zap, X } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
+import { formatTempNumber } from '../utils/tempGenerator';
 
 interface TempRecordingPanelProps {
   selectedContainer: ReeferContainer | null;
@@ -185,6 +186,7 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
                       style={{ height: '28px', fontSize: '12px', padding: '2px 4px', width: '48px' }}
                       value={rec.df1}
                       onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df1', e.target.value)}
+                      onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df1', formatTempNumber(e.target.value))}
                     />
                   </td>
                   <td>
@@ -194,6 +196,7 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
                       style={{ height: '28px', fontSize: '12px', padding: '2px 4px', width: '48px' }}
                       value={rec.df2}
                       onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df2', e.target.value)}
+                      onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df2', formatTempNumber(e.target.value))}
                     />
                   </td>
                   <td>
@@ -203,6 +206,7 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
                       style={{ height: '28px', fontSize: '12px', padding: '2px 4px', width: '48px' }}
                       value={rec.df3}
                       onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df3', e.target.value)}
+                      onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df3', formatTempNumber(e.target.value))}
                     />
                   </td>
                   <td>

@@ -2,6 +2,7 @@ import React from 'react';
 import { ReeferContainer } from '../types/reefer';
 import { Edit3 } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
+import { formatTempNumber } from '../utils/tempGenerator';
 
 const FIXED_CREW_ROLES = ['C/O', '2/O', '3/O', '3/E'];
 
@@ -119,7 +120,8 @@ export const ReeferDetailPanel: React.FC<ReeferDetailPanelProps> = ({
               className="input-control"
               value={selectedContainer.loadingTemp}
               onChange={(e) => onUpdateContainer(selectedContainer.id, 'loadingTemp', e.target.value)}
-              placeholder="e.g. 2"
+              onBlur={(e) => onUpdateContainer(selectedContainer.id, 'loadingTemp', formatTempNumber(e.target.value))}
+              placeholder="e.g. -20.0"
             />
           </div>
           <div className="form-group">
@@ -129,7 +131,8 @@ export const ReeferDetailPanel: React.FC<ReeferDetailPanelProps> = ({
               className="input-control"
               value={selectedContainer.dischargeTemp}
               onChange={(e) => onUpdateContainer(selectedContainer.id, 'dischargeTemp', e.target.value)}
-              placeholder="e.g. 3"
+              onBlur={(e) => onUpdateContainer(selectedContainer.id, 'dischargeTemp', formatTempNumber(e.target.value))}
+              placeholder="e.g. -20.0"
             />
           </div>
         </div>

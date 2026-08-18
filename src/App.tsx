@@ -8,7 +8,7 @@ import { ExportModal } from './components/ExportModal';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
 import { getInitialState } from './utils/initialData';
 import { ReeferContainer, ReeferFormState, TempRecord } from './types/reefer';
-import { generateAutoTempRecords, calculateReeferDaysAndCash } from './utils/tempGenerator';
+import { generateAutoTempRecords, calculateReeferDaysAndCash, formatTempNumber } from './utils/tempGenerator';
 import { printHandoverForm } from './utils/printHandover';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -360,7 +360,14 @@ export const App: React.FC = () => {
     setFormState((prev) => {
       const newContainers: ReeferContainer[] = importedData.map((item, index) => {
         const newId = `imported-${Date.now()}-${index}`;
-        const tempRecords = item.tempRecords && item.tempRecords.length > 0 ? item.tempRecords : [];
+        const rawTempRecords = item.tempRecords && item.tempRecords.length > 0 ? item.tempRecords : [];
+        const tempRecords = rawTempRecords.map((r) => ({
+          ...r,
+          df1: formatTempNumber(r.df1),
+          df2: formatTempNumber(r.df2),
+          df3: formatTempNumber(r.df3),
+        }));
+
         const { days: computedDays, cash: computedCash } = calculateReeferDaysAndCash(
           item.loadingDatetime,
           item.dischargeDatetime,
@@ -373,15 +380,15 @@ export const App: React.FC = () => {
         return {
           id: newId,
           containerNumber: item.containerNumber || '',
-          settingTemp: item.settingTemp || '',
+          settingTemp: formatTempNumber(item.settingTemp),
           commodity: item.commodity || '',
           loadingLocation: item.loadingLocation || '',
           loadingPort: item.loadingPort || '',
           loadingDatetime: item.loadingDatetime || '',
-          loadingTemp: item.loadingTemp || '',
+          loadingTemp: formatTempNumber(item.loadingTemp),
           dischargePort: item.dischargePort || '',
           dischargeDatetime: item.dischargeDatetime || '',
-          dischargeTemp: item.dischargeTemp || '',
+          dischargeTemp: formatTempNumber(item.dischargeTemp),
           remark1: item.remark1 || '',
           days,
           cash,
