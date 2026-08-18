@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from './components/Header';
 import { BasicInfoCard } from './components/BasicInfoCard';
 import { ReeferListPanel } from './components/ReeferListPanel';
@@ -6,7 +6,7 @@ import { TempRecordingPanel } from './components/TempRecordingPanel';
 import { ImportModal } from './components/ImportModal';
 import { ExportModal } from './components/ExportModal';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
-import { getInitialState } from './utils/initialData';
+import { getInitialState, STORAGE_KEY } from './utils/initialData';
 import { ReeferContainer, ReeferFormState, TempRecord } from './types/reefer';
 import { generateAutoTempRecords, calculateReeferDaysAndCash, formatTempNumber } from './utils/tempGenerator';
 import { printHandoverForm } from './utils/printHandover';
@@ -20,6 +20,15 @@ export const App: React.FC = () => {
   const [showTempPanel, setShowTempPanel] = useState(false);
   const [tempContainerId, setTempContainerId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // 自動同步 state 至 localStorage，確保網頁重新整理後資料不遺失
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formState));
+    } catch (err) {
+      console.error('Failed to save state to localStorage:', err);
+    }
+  }, [formState]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -477,6 +486,11 @@ export const App: React.FC = () => {
   };
 
   const handleConfirmReset = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.error('Failed to clear localStorage:', err);
+    }
     setFormState(getInitialState());
     showToast('表單已重置為空值狀態');
   };
