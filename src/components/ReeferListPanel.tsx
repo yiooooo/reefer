@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ReeferContainer } from '../types/reefer';
 import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle } from 'lucide-react';
+import { DatetimePicker24h } from './DatetimePicker24h';
 
 type FilterMode = 'all' | 'discharged' | 'not_discharged';
 
@@ -542,17 +543,10 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                       </td>
 
                       {/* 裝船日期時間 */}
-                      <td>
-                        <input
-                          type="datetime-local"
-                          className="input-control"
-                          style={{ height: '28px', fontSize: '11px', padding: '2px 4px', width: '140px' }}
+                      <td style={{ minWidth: '150px' }} onClick={(e) => { e.stopPropagation(); onSelectContainer(cnt.id); }}>
+                        <DatetimePicker24h
                           value={cnt.loadingDatetime}
-                          onChange={(e) => onUpdateContainer(cnt.id, 'loadingDatetime', e.target.value)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectContainer(cnt.id);
-                          }}
+                          onChange={(val) => onUpdateContainer(cnt.id, 'loadingDatetime', val)}
                         />
                       </td>
 
@@ -587,17 +581,10 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                       </td>
 
                       {/* 卸船日期時間 */}
-                      <td>
-                        <input
-                          type="datetime-local"
-                          className="input-control"
-                          style={{ height: '28px', fontSize: '11px', padding: '2px 4px', width: '140px' }}
+                      <td style={{ minWidth: '150px' }} onClick={(e) => { e.stopPropagation(); onSelectContainer(cnt.id); }}>
+                        <DatetimePicker24h
                           value={cnt.dischargeDatetime}
-                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargeDatetime', e.target.value)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectContainer(cnt.id);
-                          }}
+                          onChange={(val) => onUpdateContainer(cnt.id, 'dischargeDatetime', val)}
                         />
                       </td>
 

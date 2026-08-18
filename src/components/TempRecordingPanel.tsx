@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ReeferContainer, TempRecord } from '../types/reefer';
 import { Plus, Trash2, Zap, X } from 'lucide-react';
+import { DatetimePicker24h } from './DatetimePicker24h';
 
 interface TempRecordingPanelProps {
   selectedContainer: ReeferContainer | null;
@@ -171,12 +172,10 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
                 selectedContainer.tempRecords.map((rec) => (
                   <tr key={rec.id}>
                   <td>
-                    <input
-                      type="date"
-                      className="input-control"
-                      style={{ height: '28px', fontSize: '11px', padding: '2px 4px', width: '120px' }}
+                    <DatetimePicker24h
                       value={rec.dateLog}
-                      onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'dateLog', e.target.value)}
+                      onChange={(val) => onUpdateTempRecord(selectedContainer.id, rec.id, 'dateLog', val)}
+                      showTime={false}
                     />
                   </td>
                   <td>

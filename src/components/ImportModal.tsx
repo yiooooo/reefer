@@ -109,38 +109,40 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           const remark1 = getTagValue(itemNode, 'remark_1');
           const cashVal = parseFloat(getTagValue(itemNode, 'cash'));
 
-          // 轉成 HTML5 <input type="datetime-local"> 格式 (YYYY-MM-DDTHH:mm)
+          // 統一使用 YYYY-MM-DD HH:mm 格式
           const loadingDtStr = getTagValue(itemNode, 'loading_datetime');
           const dischargeDtStr = getTagValue(itemNode, 'discharge_datetime');
 
           let loadingDatetime = '';
           if (loadingDtStr && loadingDtStr.toLowerCase() !== 'null') {
-            const d = new Date(loadingDtStr);
+            const cleanStr = loadingDtStr.replace(/\//g, '-').replace(' ', 'T');
+            const d = new Date(cleanStr);
             if (!isNaN(d.getTime())) {
               const pad = (n: number) => String(n).padStart(2, '0');
-              loadingDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              loadingDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
             } else {
-              loadingDatetime = loadingDtStr;
+              loadingDatetime = loadingDtStr.replace('T', ' ');
             }
           } else if (loadingDate) {
             const h = loadingH ? loadingH.padStart(2, '0') : '00';
             const m = loadingM ? loadingM.padStart(2, '0') : '00';
-            loadingDatetime = `${loadingDate}T${h}:${m}`;
+            loadingDatetime = `${loadingDate} ${h}:${m}`;
           }
 
           let dischargeDatetime = '';
           if (dischargeDtStr && dischargeDtStr.toLowerCase() !== 'null') {
-            const d = new Date(dischargeDtStr);
+            const cleanStr = dischargeDtStr.replace(/\//g, '-').replace(' ', 'T');
+            const d = new Date(cleanStr);
             if (!isNaN(d.getTime())) {
               const pad = (n: number) => String(n).padStart(2, '0');
-              dischargeDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              dischargeDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
             } else {
-              dischargeDatetime = dischargeDtStr;
+              dischargeDatetime = dischargeDtStr.replace('T', ' ');
             }
           } else if (dischargeDate) {
             const h = handoverH ? handoverH.padStart(2, '0') : '00';
             const m = handoverM ? handoverM.padStart(2, '0') : '00';
-            dischargeDatetime = `${dischargeDate}T${h}:${m}`;
+            dischargeDatetime = `${dischargeDate} ${h}:${m}`;
           }
 
           // 提取每日溫度紀錄 (group2)

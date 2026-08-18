@@ -1,6 +1,7 @@
 import React from 'react';
 import { ReeferContainer } from '../types/reefer';
 import { Edit3 } from 'lucide-react';
+import { DatetimePicker24h } from './DatetimePicker24h';
 
 const FIXED_CREW_ROLES = ['C/O', '2/O', '3/O', '3/E'];
 
@@ -91,24 +92,20 @@ export const ReeferDetailPanel: React.FC<ReeferDetailPanelProps> = ({
           </div>
         </div>
 
-        {/* 裝船日期時間 & 卸船日期時間 (RWD Auto-wrap) */}
+        {/* 裝船日期時間 & 卸船日期時間 (24小時制: YYYY/MM/DD HH:mm) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
           <div className="form-group">
             <label className="form-label">裝船日期時間</label>
-            <input
-              type="datetime-local"
-              className="input-control"
+            <DatetimePicker24h
               value={selectedContainer.loadingDatetime}
-              onChange={(e) => onUpdateContainer(selectedContainer.id, 'loadingDatetime', e.target.value)}
+              onChange={(val) => onUpdateContainer(selectedContainer.id, 'loadingDatetime', val)}
             />
           </div>
           <div className="form-group">
             <label className="form-label">卸船日期時間</label>
-            <input
-              type="datetime-local"
-              className="input-control"
+            <DatetimePicker24h
               value={selectedContainer.dischargeDatetime}
-              onChange={(e) => onUpdateContainer(selectedContainer.id, 'dischargeDatetime', e.target.value)}
+              onChange={(val) => onUpdateContainer(selectedContainer.id, 'dischargeDatetime', val)}
             />
           </div>
         </div>

@@ -1,5 +1,13 @@
 import { TempRecord } from '../types/reefer';
 
+// 強健的日期解析器：同時相容 "YYYY/MM/DD HH:mm" 與 "YYYY-MM-DDTHH:mm"
+const parseDatetime = (str: string): Date | null => {
+  if (!str || !str.trim()) return null;
+  const normalized = str.trim().replace(/\//g, '-').replace(' ', 'T');
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 export const generateAutoTempRecords = (
   settingTempStr: string,
   loadingDatetimeStr: string,
@@ -8,9 +16,9 @@ export const generateAutoTempRecords = (
   // 必須同時提供有效的裝船與卸船日期時間，否則不進行自動生成
   if (!loadingDatetimeStr || !dischargeDatetimeStr) return [];
 
-  const parsedStart = new Date(loadingDatetimeStr);
-  const parsedEnd = new Date(dischargeDatetimeStr);
-  if (isNaN(parsedStart.getTime()) || isNaN(parsedEnd.getTime())) return [];
+  const parsedStart = parseDatetime(loadingDatetimeStr);
+  const parsedEnd = parseDatetime(dischargeDatetimeStr);
+  if (!parsedStart || !parsedEnd) return [];
 
   const baseTemp = parseFloat(settingTempStr) || 0.0;
   const startDate = parsedStart;
@@ -82,9 +90,9 @@ export const calculateReeferDaysAndCash = (
   let days = 0;
 
   if (loadingDatetimeStr && dischargeDatetimeStr) {
-    const loadDate = new Date(loadingDatetimeStr);
-    const dischDate = new Date(dischargeDatetimeStr);
-    if (!isNaN(loadDate.getTime()) && !isNaN(dischDate.getTime())) {
+    const loadDate = parseDatetime(loadingDatetimeStr);
+    const dischDate = parseDatetime(dischargeDatetimeStr);
+    if (loadDate && dischDate) {
       const start = new Date(loadDate.getFullYear(), loadDate.getMonth(), loadDate.getDate());
       const end = new Date(dischDate.getFullYear(), dischDate.getMonth(), dischDate.getDate());
       const diffTime = end.getTime() - start.getTime();
