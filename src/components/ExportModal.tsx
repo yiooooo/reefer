@@ -127,7 +127,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <FileCheck2 size={28} />
           </div>
           <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: 700, marginBottom: '6px' }}>
-            匯出公司標準 XML 檔案
+            匯出 XML 檔案
           </div>
           <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
             冷櫃資料已準備完畢（共 {formState.containers.length} 筆資料）。<br />

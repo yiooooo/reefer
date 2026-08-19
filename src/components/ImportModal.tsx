@@ -375,11 +375,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             </div>
           </div>
 
-          {/* 貼上文字 / XML 內容欄位 (置於最下方) */}
+          {/* 貼上 TXT 內容欄位 (置於最下方) */}
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <FileText size={14} color="#0284c7" />
-              或直接在此貼上 XML / TXT 內容
+              或直接在此貼上 TXT 內容
             </label>
             <textarea
               className="input-control"
@@ -391,7 +391,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                 padding: '8px',
                 resize: 'vertical',
               }}
-              placeholder="請直接剪貼 XML 文字內容於此..."
+              placeholder="請直接剪貼 TXT 文字內容於此..."
               value={rawText}
               onChange={(e) => {
                 setRawText(e.target.value);
