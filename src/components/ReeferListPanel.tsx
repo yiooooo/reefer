@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ReeferContainer } from '../types/reefer';
-import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle } from 'lucide-react';
+import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle, AlertTriangle } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
 import { formatTempNumber } from '../utils/tempGenerator';
 
@@ -12,6 +12,8 @@ interface ReeferListPanelProps {
   containers: ReeferContainer[];
   selectedContainerId: string | null;
   dischargedCount: number;
+  duplicateCount?: number;
+  onOpenDuplicateModal?: () => void;
   onSelectContainer: (id: string) => void;
   onAddContainer: (count: number) => void;
   onDeleteContainer: (id: string) => void;
@@ -25,6 +27,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   containers,
   selectedContainerId,
   dischargedCount,
+  duplicateCount = 0,
+  onOpenDuplicateModal,
   onSelectContainer,
   onAddContainer,
   onDeleteContainer,
@@ -314,32 +318,46 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             </div>
           </div>
 
-          <button
-            className="btn btn-icon-only"
-            title="開啟港口與關鍵字篩選"
-            onClick={() => setShowFilterPanel((prev) => !prev)}
-            style={{
-              background: showFilterPanel || hasActiveFilters ? '#0284c7' : 'transparent',
-              borderColor: showFilterPanel || hasActiveFilters ? '#0284c7' : '#cbd5e1',
-              color: showFilterPanel || hasActiveFilters ? '#ffffff' : '#0284c7',
-              position: 'relative',
-            }}
-          >
-            <SlidersHorizontal size={15} />
-            {hasActiveFilters && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
-                  width: '7px',
-                  height: '7px',
-                  borderRadius: '50%',
-                  background: '#ef4444',
-                }}
-              />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {duplicateCount > 0 && (
+              <button
+                type="button"
+                onClick={onOpenDuplicateModal}
+                className="h-7 px-2.5 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-md hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                title="點擊查看裝載位置重複對照詳情"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                位置重複 ({duplicateCount})
+              </button>
             )}
-          </button>
+
+            <button
+              className="btn btn-icon-only"
+              title="開啟港口與關鍵字篩選"
+              onClick={() => setShowFilterPanel((prev) => !prev)}
+              style={{
+                background: showFilterPanel || hasActiveFilters ? '#0284c7' : 'transparent',
+                borderColor: showFilterPanel || hasActiveFilters ? '#0284c7' : '#cbd5e1',
+                color: showFilterPanel || hasActiveFilters ? '#ffffff' : '#0284c7',
+                position: 'relative',
+              }}
+            >
+              <SlidersHorizontal size={15} />
+              {hasActiveFilters && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                  }}
+                />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Port & Keyword Filter Toolbar */}

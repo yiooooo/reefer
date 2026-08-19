@@ -10,6 +10,7 @@ import { getInitialState, STORAGE_KEY } from './utils/initialData';
 import { ReeferContainer, ReeferFormState, TempRecord } from './types/reefer';
 import { generateAutoTempRecords, calculateReeferDaysAndCash, formatTempNumber } from './utils/tempGenerator';
 import { printHandoverForm } from './utils/printHandover';
+import { findDuplicateLocations, DuplicateLocationModal } from './components/DuplicateLocationModal';
 import { CheckCircle2 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -17,6 +18,7 @@ export const App: React.FC = () => {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
   const [showTempPanel, setShowTempPanel] = useState(false);
   const [tempContainerId, setTempContainerId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -55,6 +57,11 @@ export const App: React.FC = () => {
 
   const dischargedCount = useMemo(() => {
     return formState.containers.filter((c) => c.dischargeDatetime?.trim()).length;
+  }, [formState.containers]);
+
+  // 重複裝載位置偵測
+  const duplicateConflicts = useMemo(() => {
+    return findDuplicateLocations(formState.containers);
   }, [formState.containers]);
 
   // 基本資訊與交接單表單處置器
@@ -152,9 +159,8 @@ export const App: React.FC = () => {
 
 
   const handleUpdateContainer = (id: string, field: keyof ReeferContainer, value: any) => {
-    setFormState((prev) => ({
-      ...prev,
-      containers: prev.containers.map((c) => {
+    setFormState((prev) => {
+      const updatedContainers = prev.containers.map((c) => {
         if (c.id === id) {
           const updated = { ...c, [field]: value };
           if (field === 'loadingDatetime' || field === 'dischargeDatetime') {
@@ -169,8 +175,20 @@ export const App: React.FC = () => {
           return updated;
         }
         return c;
-      }),
-    }));
+      });
+
+      if (field === 'loadingLocation' && value && String(value).trim()) {
+        const dupes = findDuplicateLocations(updatedContainers);
+        if (dupes.length > 0) {
+          setIsDuplicateOpen(true);
+        }
+      }
+
+      return {
+        ...prev,
+        containers: updatedContainers,
+      };
+    });
   };
 
   // 巡溫紀錄維護處置器
@@ -483,6 +501,17 @@ export const App: React.FC = () => {
     } else {
       showToast(`已累計匯入 ${addedCount} 筆冷櫃資料（現有總計 ${finalTotalCount} 筆）！`);
     }
+
+    // 匯入完成後自動檢查是否有重複裝載位置
+    setTimeout(() => {
+      setFormState((latestState) => {
+        const dupes = findDuplicateLocations(latestState.containers);
+        if (dupes.length > 0) {
+          setIsDuplicateOpen(true);
+        }
+        return latestState;
+      });
+    }, 100);
   };
 
   const handleConfirmReset = () => {
@@ -565,6 +594,8 @@ export const App: React.FC = () => {
                 containers={formState.containers}
                 selectedContainerId={formState.selectedContainerId}
                 dischargedCount={dischargedCount}
+                duplicateCount={duplicateConflicts.length}
+                onOpenDuplicateModal={() => setIsDuplicateOpen(true)}
                 onSelectContainer={handleSelectContainer}
                 onAddContainer={handleAddContainer}
                 onDeleteContainer={handleDeleteContainer}
@@ -624,6 +655,13 @@ export const App: React.FC = () => {
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
         formState={formState}
+      />
+
+      {/* Duplicate Location Alert Modal */}
+      <DuplicateLocationModal
+        isOpen={isDuplicateOpen}
+        onClose={() => setIsDuplicateOpen(false)}
+        duplicates={duplicateConflicts}
       />
     </div>
   );

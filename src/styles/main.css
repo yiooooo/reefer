@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+/* 1. Tailwind CSS 核心與 Utility 工具類 (初始化 @layer 聲明) */
+@import "./tailwind.css";
+
+/* 2. 全域變數與重置 (Base / Reset Layer) */
+@import "./reset.css";
+
+/* 3. 專案客製元件樣式 (App Component Styles) */
+@import "./app.css";
