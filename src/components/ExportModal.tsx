@@ -17,11 +17,18 @@ const formatIsoDatetime = (str: string, fallbackIfEmpty = 'null'): string => {
   return d.toISOString();
 };
 
+export const getShortVesselName = (name?: string, fallback = ''): string => {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return fallback;
+  return trimmed.length >= 2 ? trimmed.slice(-2) : trimmed;
+};
+
 export const buildExportXml = (formState: ReeferFormState): string => {
   const totalContainers = formState.containers.length;
   const totalCash = formState.containers.reduce((acc, c) => acc + (c.cash || 0), 0);
   const countLong = formState.containers.filter((c) => c.cash === 800).length;
   const countShort = formState.containers.filter((c) => c.cash === 400).length;
+  const vesselName = getShortVesselName(formState.vesselName);
 
   const group1Xml = formState.containers
     .map((cnt) => {
@@ -59,7 +66,7 @@ export const buildExportXml = (formState: ReeferFormState): string => {
     .join('');
 
   // 公司標準外殼：<form> ... </form> 格式
-  return `<?xml version="1.0" encoding="UTF-8"?><form><CATEGORY>${formState.category || 'WEB_FFS'}</CATEGORY><FORM_TYPE>${formState.formType || 'reefer_bonus'}</FORM_TYPE><IMO>${formState.imo || '9319131'}</IMO><SHIP_NAME>${formState.vesselName || ''}</SHIP_NAME><VESSEL_STATUS>${formState.vesselStatus || 'own vessel'}</VESSEL_STATUS><VOYAGE>${formState.voyage || ''}</VOYAGE><COUNT>${totalContainers}</COUNT><TOTALCASH>${totalCash}</TOTALCASH><COUNT_LONG>${countLong}</COUNT_LONG><COUNT_SHORT>${countShort}</COUNT_SHORT><PRINT_PORT>${formState.printPortInput || ''}</PRINT_PORT><QUERY_TYPE>${formState.queryType || 'DISCHARGE'}</QUERY_TYPE><PRINT_TYPE>${formState.printType || 'LOADPRINT'}</PRINT_TYPE><IMPORT_TYPE>${formState.importType || 'SUPERCARGO'}</IMPORT_TYPE>${group1Xml}</form>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><form><CATEGORY>${formState.category || 'WEB_FFS'}</CATEGORY><FORM_TYPE>${formState.formType || 'reefer_bonus'}</FORM_TYPE><IMO>${formState.imo || '9319131'}</IMO><SHIP_NAME>${vesselName}</SHIP_NAME><VESSEL_STATUS>${formState.vesselStatus || 'own vessel'}</VESSEL_STATUS><VOYAGE>${formState.voyage || ''}</VOYAGE><COUNT>${totalContainers}</COUNT><TOTALCASH>${totalCash}</TOTALCASH><COUNT_LONG>${countLong}</COUNT_LONG><COUNT_SHORT>${countShort}</COUNT_SHORT><PRINT_PORT>${formState.printPortInput || ''}</PRINT_PORT><QUERY_TYPE>${formState.queryType || 'DISCHARGE'}</QUERY_TYPE><PRINT_TYPE>${formState.printType || 'LOADPRINT'}</PRINT_TYPE><IMPORT_TYPE>${formState.importType || 'SUPERCARGO'}</IMPORT_TYPE>${group1Xml}</form>`;
 };
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -78,13 +85,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     const a = document.createElement('a');
     a.href = url;
 
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
-    const rawVessel = (formState.vesselName || 'SHIP').trim();
-    const vesselStr = rawVessel.length >= 2 ? rawVessel.slice(-2) : rawVessel;
+    const vesselStr = getShortVesselName(formState.vesselName);
+    const voyageStr = (formState.voyage || '').trim();
 
-    a.download = `${vesselStr}_reefer_bonus_${timestamp}.xml`;
+    a.download = `${vesselStr}V_${voyageStr}_Reefer.xml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
