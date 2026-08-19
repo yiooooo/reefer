@@ -81,7 +81,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
-    const vesselStr = (formState.vesselName || 'SHIP').trim();
+    const rawVessel = (formState.vesselName || 'SHIP').trim();
+    const vesselStr = rawVessel.length >= 2 ? rawVessel.slice(-2) : rawVessel;
 
     a.download = `${vesselStr}_reefer_bonus_${timestamp}.xml`;
     document.body.appendChild(a);
