@@ -1,16 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { BasicInfoCard } from './components/BasicInfoCard';
 import { ReeferListPanel } from './components/ReeferListPanel';
-import { ReeferDetailPanel } from './components/ReeferDetailPanel';
 import { TempRecordingPanel } from './components/TempRecordingPanel';
 import { ImportModal } from './components/ImportModal';
 import { ExportModal } from './components/ExportModal';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
-import { getInitialState } from './utils/initialData';
+import { getInitialState, STORAGE_KEY } from './utils/initialData';
 import { ReeferContainer, ReeferFormState, TempRecord } from './types/reefer';
-import { generateAutoTempRecords, calculateReeferDaysAndCash } from './utils/tempGenerator';
+import { generateAutoTempRecords, calculateReeferDaysAndCash, formatTempNumber } from './utils/tempGenerator';
 import { printHandoverForm } from './utils/printHandover';
+import { findDuplicateLocations, DuplicateLocationModal } from './components/DuplicateLocationModal';
 import { CheckCircle2 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -18,9 +18,19 @@ export const App: React.FC = () => {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
   const [showTempPanel, setShowTempPanel] = useState(false);
   const [tempContainerId, setTempContainerId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // 自動同步 state 至 localStorage，確保網頁重新整理後資料不遺失
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formState));
+    } catch (err) {
+      console.error('Failed to save state to localStorage:', err);
+    }
+  }, [formState]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -49,6 +59,11 @@ export const App: React.FC = () => {
     return formState.containers.filter((c) => c.dischargeDatetime?.trim()).length;
   }, [formState.containers]);
 
+  // 重複裝載位置偵測
+  const duplicateConflicts = useMemo(() => {
+    return findDuplicateLocations(formState.containers);
+  }, [formState.containers]);
+
   // 基本資訊與交接單表單處置器
   const handleVesselStatusChange = (status: 'own vessel' | 'chartered vessel') => {
     setFormState((prev) => ({ ...prev, vesselStatus: status }));
@@ -62,9 +77,9 @@ export const App: React.FC = () => {
     setFormState((prev) => ({ ...prev, printType }));
   };
 
-  const handlePrintPortInputChange = (printPortInput: string) => {
+  const handlePrintPortInputChange = useCallback((printPortInput: string) => {
     setFormState((prev) => ({ ...prev, printPortInput }));
-  };
+  }, []);
 
   // 冷櫃資料維護處置器
   const handleSelectContainer = (id: string) => {
@@ -143,10 +158,9 @@ export const App: React.FC = () => {
   };
 
 
-  const handleUpdateContainer = (id: string, field: keyof ReeferContainer, value: any) => {
-    setFormState((prev) => ({
-      ...prev,
-      containers: prev.containers.map((c) => {
+  const handleUpdateContainer = <K extends keyof ReeferContainer>(id: string, field: K, value: ReeferContainer[K]) => {
+    setFormState((prev) => {
+      const updatedContainers = prev.containers.map((c) => {
         if (c.id === id) {
           const updated = { ...c, [field]: value };
           if (field === 'loadingDatetime' || field === 'dischargeDatetime') {
@@ -161,8 +175,20 @@ export const App: React.FC = () => {
           return updated;
         }
         return c;
-      }),
-    }));
+      });
+
+      if (field === 'loadingLocation' && value && String(value).trim()) {
+        const dupes = findDuplicateLocations(updatedContainers);
+        if (dupes.length > 0) {
+          setIsDuplicateOpen(true);
+        }
+      }
+
+      return {
+        ...prev,
+        containers: updatedContainers,
+      };
+    });
   };
 
   // 巡溫紀錄維護處置器
@@ -242,11 +268,11 @@ export const App: React.FC = () => {
     }));
   };
 
-  const handleUpdateTempRecord = (
+  const handleUpdateTempRecord = <K extends keyof TempRecord>(
     containerId: string,
     recordId: string,
-    field: keyof TempRecord,
-    value: any
+    field: K,
+    value: TempRecord[K]
   ) => {
     setFormState((prev) => ({
       ...prev,
@@ -361,7 +387,14 @@ export const App: React.FC = () => {
     setFormState((prev) => {
       const newContainers: ReeferContainer[] = importedData.map((item, index) => {
         const newId = `imported-${Date.now()}-${index}`;
-        const tempRecords = item.tempRecords && item.tempRecords.length > 0 ? item.tempRecords : [];
+        const rawTempRecords = item.tempRecords && item.tempRecords.length > 0 ? item.tempRecords : [];
+        const tempRecords = rawTempRecords.map((r) => ({
+          ...r,
+          df1: formatTempNumber(r.df1),
+          df2: formatTempNumber(r.df2),
+          df3: formatTempNumber(r.df3),
+        }));
+
         const { days: computedDays, cash: computedCash } = calculateReeferDaysAndCash(
           item.loadingDatetime,
           item.dischargeDatetime,
@@ -374,15 +407,15 @@ export const App: React.FC = () => {
         return {
           id: newId,
           containerNumber: item.containerNumber || '',
-          settingTemp: item.settingTemp || '',
+          settingTemp: formatTempNumber(item.settingTemp),
           commodity: item.commodity || '',
           loadingLocation: item.loadingLocation || '',
           loadingPort: item.loadingPort || '',
           loadingDatetime: item.loadingDatetime || '',
-          loadingTemp: item.loadingTemp || '',
+          loadingTemp: formatTempNumber(item.loadingTemp),
           dischargePort: item.dischargePort || '',
           dischargeDatetime: item.dischargeDatetime || '',
-          dischargeTemp: item.dischargeTemp || '',
+          dischargeTemp: formatTempNumber(item.dischargeTemp),
           remark1: item.remark1 || '',
           days,
           cash,
@@ -468,9 +501,25 @@ export const App: React.FC = () => {
     } else {
       showToast(`已累計匯入 ${addedCount} 筆冷櫃資料（現有總計 ${finalTotalCount} 筆）！`);
     }
+
+    // 匯入完成後自動檢查是否有重複裝載位置
+    setTimeout(() => {
+      setFormState((latestState) => {
+        const dupes = findDuplicateLocations(latestState.containers);
+        if (dupes.length > 0) {
+          setIsDuplicateOpen(true);
+        }
+        return latestState;
+      });
+    }, 100);
   };
 
   const handleConfirmReset = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.error('Failed to clear localStorage:', err);
+    }
     setFormState(getInitialState());
     showToast('表單已重置為空值狀態');
   };
@@ -519,6 +568,10 @@ export const App: React.FC = () => {
           voyage={formState.voyage}
           printType={formState.printType}
           printPortInput={formState.printPortInput}
+          containers={formState.containers}
+          totalCash={totalCash}
+          longCount={longCount}
+          shortCount={shortCount}
           onVesselStatusChange={handleVesselStatusChange}
           onVoyageChange={handleVoyageChange}
           onPrintTypeChange={handlePrintTypeChange}
@@ -532,19 +585,18 @@ export const App: React.FC = () => {
           }}
         />
 
-        {/* Main Layout: Combined (list+detail) + Temp Panel (on demand) */}
+        {/* Main Layout: Unified List Panel + Temp Panel (on demand) */}
         <div className="main-layout">
 
-          {/* Combined card: list on left, detail on right */}
+          {/* Combined card: unified list and detail in one table */}
           <div className="combined-wrapper">
             <div className="list-section">
               <ReeferListPanel
                 containers={formState.containers}
                 selectedContainerId={formState.selectedContainerId}
-                totalCash={totalCash}
-                longCount={longCount}
-                shortCount={shortCount}
                 dischargedCount={dischargedCount}
+                duplicateCount={duplicateConflicts.length}
+                onOpenDuplicateModal={() => setIsDuplicateOpen(true)}
                 onSelectContainer={handleSelectContainer}
                 onAddContainer={handleAddContainer}
                 onDeleteContainer={handleDeleteContainer}
@@ -561,13 +613,6 @@ export const App: React.FC = () => {
                     setShowTempPanel(true);
                   }
                 }}
-              />
-            </div>
-
-            <div className="detail-section">
-              <ReeferDetailPanel
-                selectedContainer={selectedContainer}
-                onUpdateContainer={handleUpdateContainer}
               />
             </div>
           </div>
@@ -611,6 +656,13 @@ export const App: React.FC = () => {
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
         formState={formState}
+      />
+
+      {/* Duplicate Location Alert Modal */}
+      <DuplicateLocationModal
+        isOpen={isDuplicateOpen}
+        onClose={() => setIsDuplicateOpen(false)}
+        duplicates={duplicateConflicts}
       />
     </div>
   );

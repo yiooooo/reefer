@@ -1,20 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { ReeferContainer } from '../types/reefer';
-import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle } from 'lucide-react';
+import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle, AlertTriangle } from 'lucide-react';
+import { DatetimePicker24h } from './DatetimePicker24h';
+import { formatTempNumber } from '../utils/tempGenerator';
 
 type FilterMode = 'all' | 'discharged' | 'not_discharged';
+
+const FIXED_CREW_ROLES = ['C/O', '2/O', '3/O', '3/E'];
 
 interface ReeferListPanelProps {
   containers: ReeferContainer[];
   selectedContainerId: string | null;
-  totalCash: number;
-  longCount: number;
-  shortCount: number;
   dischargedCount: number;
+  duplicateCount?: number;
+  onOpenDuplicateModal?: () => void;
   onSelectContainer: (id: string) => void;
   onAddContainer: (count: number) => void;
   onDeleteContainer: (id: string) => void;
-  onUpdateContainer: (id: string, field: keyof ReeferContainer, value: any) => void;
+  onUpdateContainer: <K extends keyof ReeferContainer>(id: string, field: K, value: ReeferContainer[K]) => void;
   onOpenImport: () => void;
   onShowTemp: (id: string) => void;
   showTempContainerId: string | null;
@@ -23,10 +26,9 @@ interface ReeferListPanelProps {
 export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   containers,
   selectedContainerId,
-  totalCash,
-  longCount,
-  shortCount,
   dischargedCount,
+  duplicateCount = 0,
+  onOpenDuplicateModal,
   onSelectContainer,
   onAddContainer,
   onDeleteContainer,
@@ -73,8 +75,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
 
   const STATUS_DOT: Record<string, { color: string; title: string }> = {
     discharged: { color: '#ef4444', title: '已卸櫃' },
-    onboard:    { color: '#f59e0b', title: '已上船未卸櫃' },
-    waiting:    { color: '#22c55e', title: '未裝船' },
+    onboard: { color: '#f59e0b', title: '已上船未卸櫃' },
+    waiting: { color: '#22c55e', title: '未裝船' },
   };
 
   const isContainerDischarged = (c: ReeferContainer) =>
@@ -112,6 +114,96 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   const hasActiveFilters = Boolean(selectedDischargePort || selectedLoadingPort || searchKeyword.trim());
   const notDischargedCount = containers.length - dischargedCount;
 
+  const handleInputKeyDown = (
+    e: React.KeyboardEvent<HTMLElement>,
+    rowIndex: number,
+    colIndex: number
+  ) => {
+    const { key, shiftKey } = e;
+    const maxCols = 11;
+
+    const focusTargetElement = (targetContainer: HTMLElement | null) => {
+      if (!targetContainer) return;
+      const targetInput = targetContainer.matches('input, textarea')
+        ? targetContainer
+        : targetContainer.querySelector<HTMLElement>('input, .MuiInputBase-input, [tabindex="0"]');
+
+      if (targetInput) {
+        targetInput.focus();
+        if (targetInput instanceof HTMLInputElement || targetInput instanceof HTMLTextAreaElement) {
+          targetInput.select();
+        }
+      } else {
+        targetContainer.focus();
+      }
+    };
+
+    // 1. 上下鍵與 Enter 鍵：固定上下換列 (包含日期選擇器)
+    if (['ArrowUp', 'ArrowDown', 'Enter'].includes(key)) {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = (e.currentTarget as HTMLElement).closest('.panel-card') || document;
+      const targetRow = key === 'ArrowUp' ? rowIndex - 1 : rowIndex + 1;
+      const targetContainer = card.querySelector<HTMLElement>(`[data-row="${targetRow}"][data-col="${colIndex}"]`);
+      focusTargetElement(targetContainer);
+      return;
+    }
+
+    // 2. Tab 與 Shift+Tab：極速前後跳欄 (跨列連動)
+    if (key === 'Tab') {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = (e.currentTarget as HTMLElement).closest('.panel-card') || document;
+      let targetRow = rowIndex;
+      let targetCol = shiftKey ? colIndex - 1 : colIndex + 1;
+
+      if (targetCol < 0) {
+        targetRow = rowIndex - 1;
+        targetCol = maxCols - 1;
+      } else if (targetCol >= maxCols) {
+        targetRow = rowIndex + 1;
+        targetCol = 0;
+      }
+
+      const targetContainer = card.querySelector<HTMLElement>(`[data-row="${targetRow}"][data-col="${targetCol}"]`);
+      focusTargetElement(targetContainer);
+      return;
+    }
+
+    // 3. 左右鍵 (ArrowLeft / ArrowRight)
+    if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      const input = e.currentTarget as HTMLInputElement;
+      const isMuiSection =
+        input.tagName !== 'INPUT' ||
+        input.classList?.contains('MuiPickersSectionList-root') ||
+        Boolean(input.closest?.('.MuiPickersSectionList-root')) ||
+        Boolean(input.closest?.('.MuiInputBase-root'));
+
+      let isAtStart = false;
+      let isAtEnd = false;
+
+      if (isMuiSection) {
+        isAtStart = true;
+        isAtEnd = true;
+      } else if ('selectionStart' in input && typeof input.selectionStart === 'number') {
+        isAtStart = input.selectionStart === 0 && input.selectionEnd === 0;
+        isAtEnd = input.selectionStart === (input.value?.length || 0) && input.selectionEnd === (input.value?.length || 0);
+      } else {
+        isAtStart = true;
+        isAtEnd = true;
+      }
+
+      if ((key === 'ArrowLeft' && isAtStart) || (key === 'ArrowRight' && isAtEnd)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = input.closest('.panel-card') || document;
+        const targetCol = key === 'ArrowLeft' ? colIndex - 1 : colIndex + 1;
+        const targetContainer = card.querySelector<HTMLElement>(`[data-row="${rowIndex}"][data-col="${targetCol}"]`);
+        focusTargetElement(targetContainer);
+      }
+    }
+  };
+
   return (
     <div className="panel-card">
       <div className="panel-header">
@@ -121,13 +213,34 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
       </div>
 
       <div className="panel-body">
-        {/* KPI Summary Badges Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div className="badge-total-cash">
-            <span className="amount">總金額 : ${totalCash} NTD</span>
-            <span className="subtext">
-              長程櫃: {longCount} ｜ 短程櫃: {shortCount}
+        {/* KPI Summary Badges & Crew Chips Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+          {/* Crew Chips */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>
+              巡櫃人員：
             </span>
+            <div className="crew-chips-container" style={{ display: 'flex', gap: '6px' }}>
+              {FIXED_CREW_ROLES.map((role) => (
+                <div
+                  key={role}
+                  className="crew-chip"
+                  style={{
+                    cursor: 'default',
+                    userSelect: 'none',
+                    padding: '4px 10px',
+                    fontWeight: 700,
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: '#334155',
+                  }}
+                >
+                  {role}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -205,32 +318,46 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             </div>
           </div>
 
-          <button
-            className="btn btn-icon-only"
-            title="開啟港口與關鍵字篩選"
-            onClick={() => setShowFilterPanel((prev) => !prev)}
-            style={{
-              background: showFilterPanel || hasActiveFilters ? '#0284c7' : 'transparent',
-              borderColor: showFilterPanel || hasActiveFilters ? '#0284c7' : '#cbd5e1',
-              color: showFilterPanel || hasActiveFilters ? '#ffffff' : '#0284c7',
-              position: 'relative',
-            }}
-          >
-            <SlidersHorizontal size={15} />
-            {hasActiveFilters && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
-                  width: '7px',
-                  height: '7px',
-                  borderRadius: '50%',
-                  background: '#ef4444',
-                }}
-              />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {duplicateCount > 0 && (
+              <button
+                type="button"
+                onClick={onOpenDuplicateModal}
+                className="h-7 px-2.5 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-md hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                title="點擊查看裝載位置重複對照詳情"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                位置重複 ({duplicateCount})
+              </button>
             )}
-          </button>
+
+            <button
+              className="btn btn-icon-only"
+              title="開啟港口與關鍵字篩選"
+              onClick={() => setShowFilterPanel((prev) => !prev)}
+              style={{
+                background: showFilterPanel || hasActiveFilters ? '#0284c7' : 'transparent',
+                borderColor: showFilterPanel || hasActiveFilters ? '#0284c7' : '#cbd5e1',
+                color: showFilterPanel || hasActiveFilters ? '#ffffff' : '#0284c7',
+                position: 'relative',
+              }}
+            >
+              <SlidersHorizontal size={15} />
+              {hasActiveFilters && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-2px',
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                  }}
+                />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Port & Keyword Filter Toolbar */}
@@ -349,8 +476,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
               {hasActiveFilters
                 ? `查無符合條件的冷櫃 (${containers.length} 筆資料中無符合者)`
                 : filterMode === 'discharged'
-                ? '目前無已卸櫃資料'
-                : '目前無未卸櫃資料'}
+                  ? '目前無已卸櫃資料'
+                  : '目前無未卸櫃資料'}
             </div>
             {hasActiveFilters && (
               <button
@@ -367,7 +494,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             )}
           </div>
         ) : (
-          <div className="data-table-wrapper" style={{ maxHeight: '420px', overflowY: 'auto', overflowX: 'auto' }}>
+          <div className="data-table-wrapper" style={{ maxHeight: '520px', overflowY: 'auto', overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -375,10 +502,16 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                   <th style={{ width: '10px' }}>#</th>
                   <th style={{ minWidth: '95px' }}>櫃號</th>
                   <th style={{ minWidth: '65px' }}>裝載位置</th>
-                  <th style={{ width: '52px' }}>設定溫度℃</th>
-                  <th style={{ width: '48px' }}>卸船港</th>
+                  <th style={{ width: '52px' }}>設定溫℃</th>
+                  <th style={{ minWidth: '100px' }}>貨物名稱</th>
+                  <th style={{ width: '65px' }}>通風開度%</th>
                   <th style={{ width: '48px' }}>裝船港</th>
-                  <th style={{ width: '28px', textAlign: 'center' }} title="溫度記錄">
+                  <th style={{ minWidth: '140px' }}>裝船日期時間</th>
+                  <th style={{ width: '50px' }}>裝船溫℃</th>
+                  <th style={{ width: '48px' }}>卸船港</th>
+                  <th style={{ minWidth: '140px' }}>卸船日期時間</th>
+                  <th style={{ width: '50px' }}>卸船溫℃</th>
+                  <th style={{ width: '28px', textAlign: 'center' }} title="巡溫記錄">
                     <Thermometer size={13} color="#0ea5e9" />
                   </th>
                 </tr>
@@ -412,13 +545,18 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                         />
                       </td>
                       <td style={{ fontWeight: 700, color: '#94a3b8', width: '10px' }}>{index + 1}</td>
+
+                      {/* 櫃號 */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={0}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '95px' }}
                           value={cnt.containerNumber}
                           onChange={(e) => onUpdateContainer(cnt.id, 'containerNumber', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 0)}
                           placeholder="請輸入櫃號"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -426,13 +564,18 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           }}
                         />
                       </td>
+
+                      {/* 裝載位置 */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={1}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '65px' }}
                           value={cnt.loadingLocation}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingLocation', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 1)}
                           placeholder="位置"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -440,45 +583,159 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           }}
                         />
                       </td>
+
+                      {/* 設定溫度℃ */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
+                          data-row={index}
+                          data-col={2}
                           style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '52px' }}
                           value={cnt.settingTemp}
                           onChange={(e) => onUpdateContainer(cnt.id, 'settingTemp', e.target.value)}
+                          onBlur={(e) => onUpdateContainer(cnt.id, 'settingTemp', formatTempNumber(e.target.value))}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 2)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
                           }}
                         />
                       </td>
+
+                      {/* 貨物名稱 */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
-                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
-                          value={cnt.dischargePort}
-                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargePort', e.target.value)}
+                          data-row={index}
+                          data-col={3}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '100%', minWidth: '100px' }}
+                          value={cnt.commodity}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'commodity', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 3)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
                           }}
                         />
                       </td>
+
+                      {/* 通風開度% */}
                       <td>
                         <input
                           type="text"
                           className="input-control"
-                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
+                          data-row={index}
+                          data-col={4}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '65px' }}
+                          value={cnt.remark1}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'remark1', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 4)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 裝船港 */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          data-row={index}
+                          data-col={5}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '48px' }}
                           value={cnt.loadingPort}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingPort', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 5)}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
                           }}
                         />
                       </td>
+
+                      {/* 裝船日期時間 */}
+                      <td style={{ minWidth: '150px' }} onClick={() => onSelectContainer(cnt.id)}>
+                        <DatetimePicker24h
+                          value={cnt.loadingDatetime}
+                          onChange={(val) => onUpdateContainer(cnt.id, 'loadingDatetime', val)}
+                          dataRow={index}
+                          dataCol={6}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 6)}
+                        />
+                      </td>
+
+                      {/* 裝船溫℃ */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          data-row={index}
+                          data-col={7}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
+                          value={cnt.loadingTemp}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'loadingTemp', e.target.value)}
+                          onBlur={(e) => onUpdateContainer(cnt.id, 'loadingTemp', formatTempNumber(e.target.value))}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 7)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 卸船港 */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          data-row={index}
+                          data-col={8}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '48px' }}
+                          value={cnt.dischargePort}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargePort', e.target.value)}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 8)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 卸船日期時間 */}
+                      <td style={{ minWidth: '150px' }} onClick={() => onSelectContainer(cnt.id)}>
+                        <DatetimePicker24h
+                          value={cnt.dischargeDatetime}
+                          onChange={(val) => onUpdateContainer(cnt.id, 'dischargeDatetime', val)}
+                          dataRow={index}
+                          dataCol={9}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 9)}
+                        />
+                      </td>
+
+                      {/* 卸船溫℃ */}
+                      <td>
+                        <input
+                          type="text"
+                          className="input-control"
+                          data-row={index}
+                          data-col={10}
+                          style={{ height: '28px', fontSize: '12px', padding: '2px 6px', width: '50px' }}
+                          value={cnt.dischargeTemp}
+                          onChange={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', e.target.value)}
+                          onBlur={(e) => onUpdateContainer(cnt.id, 'dischargeTemp', formatTempNumber(e.target.value))}
+                          onKeyDown={(e) => handleInputKeyDown(e, index, 10)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectContainer(cnt.id);
+                          }}
+                        />
+                      </td>
+
+                      {/* 巡溫紀錄按鈕 */}
                       <td style={{ textAlign: 'center' }}>
                         <button
                           type="button"

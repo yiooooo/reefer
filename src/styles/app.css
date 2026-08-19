@@ -1,41 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
-
-:root {
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: #e0f2fe;
-  --accent: #10b981;
-  --bg-app: #f8fafc;
-  --bg-card: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border: #e2e8f0;
-  --border-focus: #38bdf8;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.12);
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Plus Jakarta Sans', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--bg-app);
-  color: var(--text-primary);
-  line-height: 1.5;
-  font-size: 13px;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
 .app-container {
   display: flex;
   flex-direction: column;
@@ -232,6 +194,27 @@ body {
   box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
 }
 
+/* File Selector Button styling for Tailwind / Browser resets */
+input[type="file"]::file-selector-button,
+input[type="file"]::-webkit-file-upload-button {
+  margin-right: 12px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #0284c7;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+input[type="file"]::file-selector-button:hover,
+input[type="file"]::-webkit-file-upload-button:hover {
+  background-color: #0369a1;
+}
+
 
 /* ─── Main Layout ─── */
 .main-layout {
@@ -242,7 +225,7 @@ body {
   min-width: 0;
 }
 
-/* The combined card (list + detail side by side) */
+/* The combined card (list & details unified) */
 .combined-wrapper {
   flex: 1;
   min-width: 0;
@@ -251,17 +234,16 @@ body {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   min-height: 560px;
   overflow: visible;       /* allow table to overflow and scroll */
 }
 
 /* List sub-column inside combined wrapper */
 .list-section {
-  width: 650px;
-  min-width: 650px;
-  flex-shrink: 0;
-  border-right: 1px solid #e2e8f0;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -277,14 +259,6 @@ body {
   flex: 1;
 }
 
-/* Detail sub-column inside combined wrapper */
-.detail-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
 /* Temperature panel — right column, fixed width */
 .temp-section {
   width: 480px;
@@ -293,10 +267,6 @@ body {
 
 /* ─── RWD breakpoints ─── */
 @media (max-width: 1400px) {
-  .list-section {
-    width: 560px;
-    min-width: 560px;
-  }
   .temp-section {
     width: 400px;
   }
@@ -313,11 +283,6 @@ body {
   .list-section {
     width: 100%;
     min-width: unset;
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  .detail-section {
-    width: 100%;
   }
   .temp-section {
     width: 100%;
@@ -458,52 +423,23 @@ body {
   border-color: #e2e8f0;
 }
 
-/* Standard Buttons */
-.btn {
-  height: 32px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.15s ease;
-}
+/* Standard Buttons (Tailwind Component Layer) */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 h-8 px-3.5 text-xs font-semibold rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900 cursor-pointer transition-colors;
+  }
 
-.btn:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #0f172a;
-}
+  .btn-primary {
+    @apply bg-sky-600 border-sky-600 text-white hover:bg-sky-700 hover:border-sky-700 hover:text-white;
+  }
 
-.btn-primary {
-  background: #0284c7;
-  border-color: #0284c7;
-  color: #ffffff;
-}
+  .btn-circle {
+    @apply w-7 h-7 p-0 rounded-full;
+  }
 
-.btn-primary:hover {
-  background: #0369a1;
-  border-color: #0369a1;
-}
-
-.btn-circle {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border-radius: 50%;
-}
-
-.btn-icon-only {
-  width: 32px;
-  height: 32px;
-  padding: 0;
+  .btn-icon-only {
+    @apply w-8 h-8 p-0;
+  }
 }
 
 /* Data Table */
@@ -522,6 +458,9 @@ body {
 }
 
 .data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: #f8fafc;
   color: #475569;
   font-weight: 700;
@@ -529,6 +468,7 @@ body {
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .data-table td {

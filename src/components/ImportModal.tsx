@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Upload, CheckCircle } from 'lucide-react';
+import { X, Upload, CheckCircle, FileText } from 'lucide-react';
 import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
-import { calculateReeferDaysAndCash } from '../utils/tempGenerator';
+import { calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
 
 export type DuplicateMode = 'allow_duplicate' | 'update_existing' | 'skip_existing';
+export type ImportType = 'AUTO' | 'XML' | 'SUPERCARGO' | 'MACS3';
 
 export interface ImportOptions {
   duplicateMode: DuplicateMode;
@@ -24,7 +25,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   onClose,
   onImportContainers,
 }) => {
-  const [importType, setImportType] = useState<'AUTO' | 'XML' | 'SUPERCARGO' | 'MACS3'>('AUTO');
+  const [importType, setImportType] = useState<ImportType>('AUTO');
   const [duplicateMode, setDuplicateMode] = useState<DuplicateMode>('allow_duplicate');
   const [rawText, setRawText] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
@@ -47,12 +48,12 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const handleImportSubmit = () => {
     const text = rawText.trim();
     if (!text) {
-      alert('請先選擇並上傳檔案！');
+      alert('請先選擇上傳檔案，或在下方文字框中貼上內容！');
       return;
     }
 
     const importedList: Partial<ReeferContainer>[] = [];
-    let metaData: { voyage?: string; vesselName?: string } = {};
+    const metaData: { voyage?: string; vesselName?: string } = {};
 
     const isXmlContent = text.startsWith('<?xml') || text.includes('<my:group1>') || text.includes('<group1>');
 
@@ -91,7 +92,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
         group1Nodes.forEach((itemNode) => {
           const containerNumber = getTagValue(itemNode, 'container_number');
-          const settingTemp = getTagValue(itemNode, 'setting_temp');
+          const settingTemp = formatTempNumber(getTagValue(itemNode, 'setting_temp'));
           const commodity = getTagValue(itemNode, 'commodity');
           const loadingLocation = getTagValue(itemNode, 'loading_location');
           const loadingPort = getTagValue(itemNode, 'loading_port');
@@ -104,43 +105,45 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           const handoverH = getTagValue(itemNode, 'handover_timeh') || getTagValue(itemNode, 'discharge_timeh');
           const handoverM = getTagValue(itemNode, 'handover_timem') || getTagValue(itemNode, 'discharge_timem');
 
-          const loadingTemp = getTagValue(itemNode, 'loading_temp');
-          const dischargeTemp = getTagValue(itemNode, 'discharge_temp');
+          const loadingTemp = formatTempNumber(getTagValue(itemNode, 'loading_temp'));
+          const dischargeTemp = formatTempNumber(getTagValue(itemNode, 'discharge_temp'));
           const remark1 = getTagValue(itemNode, 'remark_1');
           const cashVal = parseFloat(getTagValue(itemNode, 'cash'));
 
-          // 轉成 HTML5 <input type="datetime-local"> 格式 (YYYY-MM-DDTHH:mm)
+          // 統一使用 YYYY-MM-DD HH:mm 格式
           const loadingDtStr = getTagValue(itemNode, 'loading_datetime');
           const dischargeDtStr = getTagValue(itemNode, 'discharge_datetime');
 
           let loadingDatetime = '';
           if (loadingDtStr && loadingDtStr.toLowerCase() !== 'null') {
-            const d = new Date(loadingDtStr);
+            const cleanStr = loadingDtStr.replace(/\//g, '-').replace(' ', 'T');
+            const d = new Date(cleanStr);
             if (!isNaN(d.getTime())) {
               const pad = (n: number) => String(n).padStart(2, '0');
-              loadingDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              loadingDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
             } else {
-              loadingDatetime = loadingDtStr;
+              loadingDatetime = loadingDtStr.replace('T', ' ');
             }
           } else if (loadingDate) {
             const h = loadingH ? loadingH.padStart(2, '0') : '00';
             const m = loadingM ? loadingM.padStart(2, '0') : '00';
-            loadingDatetime = `${loadingDate}T${h}:${m}`;
+            loadingDatetime = `${loadingDate} ${h}:${m}`;
           }
 
           let dischargeDatetime = '';
           if (dischargeDtStr && dischargeDtStr.toLowerCase() !== 'null') {
-            const d = new Date(dischargeDtStr);
+            const cleanStr = dischargeDtStr.replace(/\//g, '-').replace(' ', 'T');
+            const d = new Date(cleanStr);
             if (!isNaN(d.getTime())) {
               const pad = (n: number) => String(n).padStart(2, '0');
-              dischargeDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              dischargeDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
             } else {
-              dischargeDatetime = dischargeDtStr;
+              dischargeDatetime = dischargeDtStr.replace('T', ' ');
             }
           } else if (dischargeDate) {
             const h = handoverH ? handoverH.padStart(2, '0') : '00';
             const m = handoverM ? handoverM.padStart(2, '0') : '00';
-            dischargeDatetime = `${dischargeDate}T${h}:${m}`;
+            dischargeDatetime = `${dischargeDate} ${h}:${m}`;
           }
 
           // 提取每日溫度紀錄 (group2)
@@ -150,9 +153,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             const child = itemChildren[j];
             if (child.localName.toLowerCase() === 'group2') {
               const dateLog = getTagValue(child, 'date_log') || getTagValue(child, 'date');
-              const df1 = getTagValue(child, 'df_1');
-              const df2 = getTagValue(child, 'df_2');
-              const df3 = getTagValue(child, 'df_3');
+              const df1 = formatTempNumber(getTagValue(child, 'df_1'));
+              const df2 = formatTempNumber(getTagValue(child, 'df_2'));
+              const df3 = formatTempNumber(getTagValue(child, 'df_3'));
               const remark = getTagValue(child, 'remark');
 
               tempRecords.push({
@@ -278,7 +281,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
 
     if (importedList.length === 0) {
-      alert('無法解析檔案內容，請確認檔案格式是否正確。');
+      alert('無法解析輸入的資料內容，請確認格式是否正確。');
       return;
     }
 
@@ -288,11 +291,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" style={{ maxWidth: '640px', width: '92%' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Upload size={18} color="#0284c7" />
-            Import File 匯入冷櫃與巡櫃資料
+            Import File / Text 匯入冷櫃與巡櫃資料
           </span>
           <button
             type="button"
@@ -303,18 +306,21 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+          {/* 上傳檔案區塊 */}
           <div className="form-group">
             <label className="form-label">選擇檔案上傳 (.xml / .txt)</label>
-            <input
-              type="file"
-              accept=".xml,.txt"
-              onChange={handleFileUpload}
-              className="input-control"
-              style={{ padding: '6px' }}
-            />
+            <div className="relative">
+              <input
+                type="file"
+                accept=".xml,.txt"
+                onChange={handleFileUpload}
+                className="input-control cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-slate-50 text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer transition-all"
+                style={{ height: '38px' }}
+              />
+            </div>
             {fileName && (
-              <span style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1.5 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1 w-fit">
                 <CheckCircle size={14} /> 已載入檔案: {fileName}
               </span>
             )}
@@ -325,7 +331,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             <select
               className="input-control"
               value={importType}
-              onChange={(e) => setImportType(e.target.value as any)}
+              onChange={(e) => setImportType(e.target.value as ImportType)}
             >
               <option value="AUTO">自動判斷 (Auto Detect XML / Text)</option>
               <option value="XML">InfoPath XML / 標準 XML 報表</option>
@@ -369,6 +375,31 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               </label>
             </div>
           </div>
+
+          {/* 貼上 TXT 內容欄位 (置於最下方) */}
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileText size={14} color="#0284c7" />
+              或直接在此貼上 TXT 內容
+            </label>
+            <textarea
+              className="input-control"
+              style={{
+                width: '100%',
+                height: '140px',
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                padding: '8px',
+                resize: 'vertical',
+              }}
+              placeholder="請直接剪貼 TXT 文字內容於此..."
+              value={rawText}
+              onChange={(e) => {
+                setRawText(e.target.value);
+                if (fileName) setFileName('');
+              }}
+            />
+          </div>
         </div>
 
         <div className="modal-footer">
@@ -383,4 +414,3 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     </div>
   );
 };
-
