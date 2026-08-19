@@ -27,7 +27,7 @@ export interface ReeferContainer {
   remark1: string; // 通風開度等備註
   days: number; // 巡溫記錄天數
   cash: number; // 計算獎金金額 (400 或 800 NTD)
-  isHidden: boolean; // 是否隱藏
+  isHidden?: boolean; // 是否隱藏
   tempRecords: TempRecord[]; // 每日溫度記錄
   crewRecords: CrewRecord[]; // 巡櫃人員記錄
 }

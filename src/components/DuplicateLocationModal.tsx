@@ -15,11 +15,21 @@ export interface DuplicateLocationConflict {
 
 /**
  * 檢查冷櫃清單中是否有重複的裝載位置
+ * （若已填寫卸船日期時間，表示已卸櫃 / 空櫃，不納入裝載位置重複檢查）
  */
 export function findDuplicateLocations(containers: ReeferContainer[]): DuplicateLocationConflict[] {
   const map = new Map<string, { id: string; containerNumber: string; index: number; loadingPort?: string; dischargePort?: string }[]>();
 
   containers.forEach((cnt, idx) => {
+    // 1. 忽略已被隱藏的貨櫃
+    if (cnt.isHidden) return;
+
+    // 2. 若有填寫卸船日期時間，表示已卸櫃 / 空櫃，忽略不計入裝載位置衝突檢查
+    const dischDt = cnt.dischargeDatetime ? cnt.dischargeDatetime.trim() : '';
+    if (dischDt && dischDt.toLowerCase() !== 'null' && dischDt !== '--') {
+      return;
+    }
+
     const loc = cnt.loadingLocation ? cnt.loadingLocation.trim().toUpperCase() : '';
     if (loc) {
       if (!map.has(loc)) {
@@ -62,9 +72,9 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
   if (!isOpen || duplicates.length === 0) return null;
 
   return (
-    <div className="modal-overlay z-[1100]" onClick={onClose}>
+    <div className="modal-overlay z-1100" onClick={onClose}>
       <div
-        className="modal-card border border-amber-300 shadow-2xl max-w-[580px] w-[92%]"
+        className="modal-card border border-amber-300 shadow-2xl max-w-580px w-[92%]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -146,7 +156,7 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
         <div className="modal-footer bg-slate-50 border-t border-slate-200 px-5 py-3.5 flex justify-end">
           <button
             type="button"
-            className="btn bg-amber-600 border-amber-600 hover:bg-amber-700 hover:border-amber-700 text-white min-w-[110px] h-9 text-xs font-bold"
+            className="btn bg-amber-600 border-amber-600 hover:bg-amber-700 hover:border-amber-700 text-white min-w-110px h-9 text-xs font-bold"
             onClick={onClose}
           >
             我知道了
