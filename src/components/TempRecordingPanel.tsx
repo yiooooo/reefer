@@ -8,7 +8,7 @@ interface TempRecordingPanelProps {
   selectedContainer: ReeferContainer | null;
   onAddTempRecord: (containerId: string, count: number) => void;
   onDeleteTempRecord: (containerId: string, recordId: string) => void;
-  onUpdateTempRecord: (containerId: string, recordId: string, field: keyof TempRecord, value: any) => void;
+  onUpdateTempRecord: <K extends keyof TempRecord>(containerId: string, recordId: string, field: K, value: TempRecord[K]) => void;
   onAutoGenerateTemp: (containerId: string) => void;
   onAutoGenerateAllTemp: () => void;
   onClose: () => void;

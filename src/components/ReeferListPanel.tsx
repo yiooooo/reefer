@@ -17,7 +17,7 @@ interface ReeferListPanelProps {
   onSelectContainer: (id: string) => void;
   onAddContainer: (count: number) => void;
   onDeleteContainer: (id: string) => void;
-  onUpdateContainer: (id: string, field: keyof ReeferContainer, value: any) => void;
+  onUpdateContainer: <K extends keyof ReeferContainer>(id: string, field: K, value: ReeferContainer[K]) => void;
   onOpenImport: () => void;
   onShowTemp: (id: string) => void;
   showTempContainerId: string | null;
@@ -130,8 +130,8 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
 
       if (targetInput) {
         targetInput.focus();
-        if ('select' in targetInput && typeof (targetInput as any).select === 'function') {
-          (targetInput as any).select();
+        if (targetInput instanceof HTMLInputElement || targetInput instanceof HTMLTextAreaElement) {
+          targetInput.select();
         }
       } else {
         targetContainer.focus();

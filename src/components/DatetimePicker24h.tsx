@@ -17,7 +17,7 @@ export interface DatetimePicker24hProps {
   width?: string;
   dataRow?: number;
   dataCol?: number;
-  onKeyDown?: (e: React.KeyboardEvent<any>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
 }
 
 /**

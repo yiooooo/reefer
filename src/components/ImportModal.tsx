@@ -4,6 +4,7 @@ import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
 import { calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
 
 export type DuplicateMode = 'allow_duplicate' | 'update_existing' | 'skip_existing';
+export type ImportType = 'AUTO' | 'XML' | 'SUPERCARGO' | 'MACS3';
 
 export interface ImportOptions {
   duplicateMode: DuplicateMode;
@@ -24,7 +25,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   onClose,
   onImportContainers,
 }) => {
-  const [importType, setImportType] = useState<'AUTO' | 'XML' | 'SUPERCARGO' | 'MACS3'>('AUTO');
+  const [importType, setImportType] = useState<ImportType>('AUTO');
   const [duplicateMode, setDuplicateMode] = useState<DuplicateMode>('allow_duplicate');
   const [rawText, setRawText] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
@@ -52,7 +53,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
 
     const importedList: Partial<ReeferContainer>[] = [];
-    let metaData: { voyage?: string; vesselName?: string } = {};
+    const metaData: { voyage?: string; vesselName?: string } = {};
 
     const isXmlContent = text.startsWith('<?xml') || text.includes('<my:group1>') || text.includes('<group1>');
 
@@ -330,7 +331,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             <select
               className="input-control"
               value={importType}
-              onChange={(e) => setImportType(e.target.value as any)}
+              onChange={(e) => setImportType(e.target.value as ImportType)}
             >
               <option value="AUTO">自動判斷 (Auto Detect XML / Text)</option>
               <option value="XML">InfoPath XML / 標準 XML 報表</option>

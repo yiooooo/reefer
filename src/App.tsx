@@ -158,7 +158,7 @@ export const App: React.FC = () => {
   };
 
 
-  const handleUpdateContainer = (id: string, field: keyof ReeferContainer, value: any) => {
+  const handleUpdateContainer = <K extends keyof ReeferContainer>(id: string, field: K, value: ReeferContainer[K]) => {
     setFormState((prev) => {
       const updatedContainers = prev.containers.map((c) => {
         if (c.id === id) {
@@ -268,11 +268,11 @@ export const App: React.FC = () => {
     }));
   };
 
-  const handleUpdateTempRecord = (
+  const handleUpdateTempRecord = <K extends keyof TempRecord>(
     containerId: string,
     recordId: string,
-    field: keyof TempRecord,
-    value: any
+    field: K,
+    value: TempRecord[K]
   ) => {
     setFormState((prev) => ({
       ...prev,
