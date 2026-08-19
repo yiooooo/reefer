@@ -309,15 +309,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           {/* 上傳檔案區塊 */}
           <div className="form-group">
             <label className="form-label">選擇檔案上傳 (.xml / .txt)</label>
-            <input
-              type="file"
-              accept=".xml,.txt"
-              onChange={handleFileUpload}
-              className="input-control"
-              style={{ padding: '6px' }}
-            />
+            <div className="relative">
+              <input
+                type="file"
+                accept=".xml,.txt"
+                onChange={handleFileUpload}
+                className="input-control cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-slate-50 text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer transition-all"
+                style={{ height: '38px' }}
+              />
+            </div>
             {fileName && (
-              <span style={{ fontSize: '12px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1.5 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1 w-fit">
                 <CheckCircle size={14} /> 已載入檔案: {fileName}
               </span>
             )}

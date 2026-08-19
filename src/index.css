@@ -234,6 +234,27 @@ body {
   box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
 }
 
+/* File Selector Button styling for Tailwind / Browser resets */
+input[type="file"]::file-selector-button,
+input[type="file"]::-webkit-file-upload-button {
+  margin-right: 12px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #0284c7;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+input[type="file"]::file-selector-button:hover,
+input[type="file"]::-webkit-file-upload-button:hover {
+  background-color: #0369a1;
+}
+
 
 /* ─── Main Layout ─── */
 .main-layout {
