@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { BasicInfoCard } from './components/BasicInfoCard';
 import { ReeferListPanel } from './components/ReeferListPanel';
@@ -77,9 +77,9 @@ export const App: React.FC = () => {
     setFormState((prev) => ({ ...prev, printType }));
   };
 
-  const handlePrintPortInputChange = (printPortInput: string) => {
+  const handlePrintPortInputChange = useCallback((printPortInput: string) => {
     setFormState((prev) => ({ ...prev, printPortInput }));
-  };
+  }, []);
 
   // 冷櫃資料維護處置器
   const handleSelectContainer = (id: string) => {
@@ -568,6 +568,7 @@ export const App: React.FC = () => {
           voyage={formState.voyage}
           printType={formState.printType}
           printPortInput={formState.printPortInput}
+          containers={formState.containers}
           totalCash={totalCash}
           longCount={longCount}
           shortCount={shortCount}

@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Printer, Ship, FileCheck } from 'lucide-react';
+import { ReeferContainer } from '../types/reefer';
 
 interface BasicInfoCardProps {
   vesselStatus: 'own vessel' | 'chartered vessel';
   voyage: string;
   printType: 'LOADPRINT' | 'DISCHARGEPRINT';
   printPortInput: string;
+  containers?: ReeferContainer[];
   totalCash?: number;
   longCount?: number;
   shortCount?: number;
@@ -21,6 +23,7 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
   voyage,
   printType,
   printPortInput,
+  containers = [],
   totalCash,
   longCount,
   shortCount,
@@ -30,6 +33,41 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
   onPrintPortInputChange,
   onPrint,
 }) => {
+  // 自動從冷櫃資料判讀不重複的「裝貨港」
+  const loadingPorts = useMemo(() => {
+    const ports = new Set<string>();
+    containers.forEach((c) => {
+      if (c.loadingPort && c.loadingPort.trim()) {
+        ports.add(c.loadingPort.trim().toUpperCase());
+      }
+    });
+    return Array.from(ports).sort();
+  }, [containers]);
+
+  // 自動從冷櫃資料判讀不重複的「卸貨港」
+  const dischargePorts = useMemo(() => {
+    const ports = new Set<string>();
+    containers.forEach((c) => {
+      if (c.dischargePort && c.dischargePort.trim()) {
+        ports.add(c.dischargePort.trim().toUpperCase());
+      }
+    });
+    return Array.from(ports).sort();
+  }, [containers]);
+
+  // 依據目前交接單模式 (Loading 裝船 / Discharge 卸船) 決定可用的港口清單
+  const availablePorts = printType === 'LOADPRINT' ? loadingPorts : dischargePorts;
+
+  // 當交接單模式切換 或 港口清單變化時，自動預設第一筆可用港口
+  useEffect(() => {
+    if (availablePorts.length > 0) {
+      const currentUpper = printPortInput ? printPortInput.trim().toUpperCase() : '';
+      if (!currentUpper || !availablePorts.includes(currentUpper)) {
+        onPrintPortInputChange(availablePorts[0]);
+      }
+    }
+  }, [availablePorts, printPortInput, onPrintPortInputChange]);
+
   return (
     <div className="top-config-bar">
       {/* 基本資訊 Card */}
@@ -89,14 +127,24 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
 
           <div className="config-item">
             <span className="form-label">交接港口：</span>
-            <input
-              type="text"
+            <select
               className="input-control"
-              style={{ width: '120px' }}
+              style={{ width: '130px' }}
               value={printPortInput}
               onChange={(e) => onPrintPortInputChange(e.target.value)}
-              placeholder="e.g. KHH / NGO"
-            />
+            >
+              {availablePorts.length === 0 && (
+                <option value="">無港口資料</option>
+              )}
+              {availablePorts.map((port) => (
+                <option key={port} value={port}>
+                  {port}
+                </option>
+              ))}
+              {printPortInput && !availablePorts.includes(printPortInput.trim().toUpperCase()) && (
+                <option value={printPortInput}>{printPortInput}</option>
+              )}
+            </select>
           </div>
 
           <button className="btn btn-primary" onClick={onPrint} title="列印船岸交接單">
