@@ -68,15 +68,15 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
 
   // 計算冷櫃狀態：'discharged' (已卸櫃) | 'onboard' (已上船未卸) | 'waiting' (未裝船)
   const getContainerStatus = (c: ReeferContainer): 'discharged' | 'onboard' | 'waiting' => {
-    if (c.dischargeDatetime?.trim()) return 'discharged'; // 已卸櫃 🔴
+    if (c.dischargeDatetime?.trim()) return 'discharged'; // 已卸櫃 🟢
     if (c.loadingDatetime?.trim()) return 'onboard';     // 已上船未卸 🟡
-    return 'waiting';                                     // 未裝船 🟢
+    return 'waiting';                                     // 未裝船 🔴
   };
 
   const STATUS_DOT: Record<string, { color: string; title: string }> = {
-    discharged: { color: '#ef4444', title: '已卸櫃' },
+    discharged: { color: '#22c55e', title: '已卸櫃' },
     onboard: { color: '#f59e0b', title: '已上船未卸櫃' },
-    waiting: { color: '#22c55e', title: '未裝船' },
+    waiting: { color: '#ef4444', title: '未裝船' },
   };
 
   const isContainerDischarged = (c: ReeferContainer) =>
