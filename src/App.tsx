@@ -555,6 +555,13 @@ export const App: React.FC = () => {
       {/* Top Dark Header */}
       <Header
         vesselName={formState.vesselName}
+        onUpdateVessel={(vesselName, imo) => {
+          setFormState((prev) => ({
+            ...prev,
+            vesselName,
+            ...(imo ? { imo } : {}),
+          }));
+        }}
         onReset={() => setIsResetOpen(true)}
         onOpenImport={() => setIsImportOpen(true)}
         onOpenExport={() => setIsExportOpen(true)}

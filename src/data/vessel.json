@@ -1,0 +1,338 @@
+[
+    {
+        "VSL_NAME": "YM CAPACITY 川明",
+        "IMO_NO": "9864540",
+        "VESSEL": "YCPT",
+        "AMOS_CODE": "284"
+    },
+    {
+        "VSL_NAME": "YM CELEBRITY 碩明",
+        "IMO_NO": "9864502",
+        "VESSEL": "YCBT",
+        "AMOS_CODE": "280"
+    },
+    {
+        "VSL_NAME": "YM CENTENNIAL 百明",
+        "IMO_NO": "9864538",
+        "VESSEL": "YCNL",
+        "AMOS_CODE": "283"
+    },
+    {
+        "VSL_NAME": "YM CERTAINTY 好明",
+        "IMO_NO": "9864552",
+        "VESSEL": "YCRT",
+        "AMOS_CODE": "285"
+    },
+    {
+        "VSL_NAME": "YM CONSTANCY 永明",
+        "IMO_NO": "9864576",
+        "VESSEL": "YCST",
+        "AMOS_CODE": "287"
+    },
+    {
+        "VSL_NAME": "YM CONTINENT 洋明",
+        "IMO_NO": "9864514",
+        "VESSEL": "YCNT",
+        "AMOS_CODE": "281"
+    },
+    {
+        "VSL_NAME": "YM CONTINUITY 存明",
+        "IMO_NO": "9864590",
+        "VESSEL": "YCNU",
+        "AMOS_CODE": "289"
+    },
+    {
+        "VSL_NAME": "YM COOPERATION 長明",
+        "IMO_NO": "9864588",
+        "VESSEL": "YCPR",
+        "AMOS_CODE": "288"
+    },
+    {
+        "VSL_NAME": "YM COSMOS 菊明",
+        "IMO_NO": "9198288",
+        "VESSEL": "YCMS",
+        "AMOS_CODE": "224"
+    },
+    {
+        "VSL_NAME": "YM CREDENTIAL 聚明",
+        "IMO_NO": "9864526",
+        "VESSEL": "YCDL",
+        "AMOS_CODE": "282"
+    },
+    {
+        "VSL_NAME": "YM CREDIBILITY 譽明",
+        "IMO_NO": "9864564",
+        "VESSEL": "YCLI",
+        "AMOS_CODE": "286"
+    },
+    {
+        "VSL_NAME": "YM EFFICIENCY 發明",
+        "IMO_NO": "9353280",
+        "VESSEL": "YEFF",
+        "AMOS_CODE": "255"
+    },
+    {
+        "VSL_NAME": "YM ENLIGHTENMENT 維明",
+        "IMO_NO": "9496604",
+        "VESSEL": "YENL",
+        "AMOS_CODE": "275"
+    },
+    {
+        "VSL_NAME": "YM ESSENCE 實明",
+        "IMO_NO": "9496599",
+        "VESSEL": "YESS",
+        "AMOS_CODE": "274"
+    },
+    {
+        "VSL_NAME": "YM ETERNITY 展明",
+        "IMO_NO": "9353292",
+        "VESSEL": "YETE",
+        "AMOS_CODE": "256"
+    },
+    {
+        "VSL_NAME": "YM EVOLUTION 創明",
+        "IMO_NO": "9496460",
+        "VESSEL": "YEVL",
+        "AMOS_CODE": "273"
+    },
+    {
+        "VSL_NAME": "YM EXCELLENCE 卓明",
+        "IMO_NO": "9496616",
+        "VESSEL": "YEXC",
+        "AMOS_CODE": "276"
+    },
+    {
+        "VSL_NAME": "YM EXPRESS 越明",
+        "IMO_NO": "9496628",
+        "VESSEL": "YEXP",
+        "AMOS_CODE": "277"
+    },
+    {
+        "VSL_NAME": "YM HARMONY 鎮明",
+        "IMO_NO": "9299329",
+        "VESSEL": "YHMN",
+        "AMOS_CODE": "233"
+    },
+    {
+        "VSL_NAME": "YM HAWK 威明",
+        "IMO_NO": "9299317",
+        "VESSEL": "YHWK",
+        "AMOS_CODE": "232"
+    },
+    {
+        "VSL_NAME": "YM HEIGHTS 宇明",
+        "IMO_NO": "9301275",
+        "VESSEL": "YHTS",
+        "AMOS_CODE": "235"
+    },
+    {
+        "VSL_NAME": "YM HORIZON 環明",
+        "IMO_NO": "9301263",
+        "VESSEL": "YHRZ",
+        "AMOS_CODE": "234"
+    },
+    {
+        "VSL_NAME": "YM IDEALS 英明",
+        "IMO_NO": "9319129",
+        "VESSEL": "YIDL",
+        "AMOS_CODE": "237"
+    },
+    {
+        "VSL_NAME": "YM IMAGE 業明",
+        "IMO_NO": "9319088",
+        "VESSEL": "YIMG",
+        "AMOS_CODE": "241"
+    },
+    {
+        "VSL_NAME": "YM IMMENSE 雲明",
+        "IMO_NO": "9319131",
+        "VESSEL": "YIMS",
+        "AMOS_CODE": "238"
+    },
+    {
+        "VSL_NAME": "YM IMPROVEMENT 來明",
+        "IMO_NO": "9334014",
+        "VESSEL": "YIMP",
+        "AMOS_CODE": "247"
+    },
+    {
+        "VSL_NAME": "YM INCEPTION 駿明",
+        "IMO_NO": "9319155",
+        "VESSEL": "YICT",
+        "AMOS_CODE": "240"
+    },
+    {
+        "VSL_NAME": "YM INAUGURATION 遠明",
+        "IMO_NO": "9334002",
+        "VESSEL": "YING",
+        "AMOS_CODE": "246"
+    },
+    {
+        "VSL_NAME": "YM INCREMENT 集明",
+        "IMO_NO": "9319143",
+        "VESSEL": "YIRM",
+        "AMOS_CODE": "239"
+    },
+    {
+        "VSL_NAME": "YM INITIATIVE 暢明",
+        "IMO_NO": "9319090",
+        "VESSEL": "YINT",
+        "AMOS_CODE": "242"
+    },
+    {
+        "VSL_NAME": "YM INSTRUCTION 近明",
+        "IMO_NO": "9331086",
+        "VESSEL": "YISN",
+        "AMOS_CODE": "244"
+    },
+    {
+        "VSL_NAME": "YM INTELLIGENT 精明",
+        "IMO_NO": "9319117",
+        "VESSEL": "YITL",
+        "AMOS_CODE": "236"
+    },
+    {
+        "VSL_NAME": "YM INTERACTION 悅明",
+        "IMO_NO": "9333993",
+        "VESSEL": "YITA",
+        "AMOS_CODE": "245"
+    },
+    {
+        "VSL_NAME": "YM MANDATE 乾明",
+        "IMO_NO": "9438523",
+        "VESSEL": "YMDT",
+        "AMOS_CODE": "271"
+    },
+    {
+        "VSL_NAME": "YM MASCULINITY 鮮明",
+        "IMO_NO": "9485007",
+        "VESSEL": "YMMS",
+        "AMOS_CODE": "265"
+    },
+    {
+        "VSL_NAME": "YM MATURITY 圓明",
+        "IMO_NO": "9438535",
+        "VESSEL": "YMTT",
+        "AMOS_CODE": "272"
+    },
+    {
+        "VSL_NAME": "YM MILESTONE 盛明",
+        "IMO_NO": "9484998",
+        "VESSEL": "YMMT",
+        "AMOS_CODE": "264"
+    },
+    {
+        "VSL_NAME": "YM MOBILITY 動明",
+        "IMO_NO": "9457737",
+        "VESSEL": "YMMB",
+        "AMOS_CODE": "263"
+    },
+    {
+        "VSL_NAME": "YM MUTUALITY 震明",
+        "IMO_NO": "9455870",
+        "VESSEL": "YMMU",
+        "AMOS_CODE": "262"
+    },
+    {
+        "VSL_NAME": "YM SUCCESS 達明",
+        "IMO_NO": "9294800",
+        "VESSEL": "MSCS",
+        "AMOS_CODE": "231"
+    },
+    {
+        "VSL_NAME": "YM TOGETHER 賢明",
+        "IMO_NO": "9789984",
+        "VESSEL": "YMTG",
+        "AMOS_CODE": "311"
+    },
+    {
+        "VSL_NAME": "YM TROPHY 納明",
+        "IMO_NO": "9789996",
+        "VESSEL": "YTRO",
+        "AMOS_CODE": "310"
+    },
+    {
+        "VSL_NAME": "YM UNANIMITY 續明",
+        "IMO_NO": "9462718",
+        "VESSEL": "YUNA",
+        "AMOS_CODE": "268"
+    },
+    {
+        "VSL_NAME": "YM UNICORN 營明",
+        "IMO_NO": "9462732",
+        "VESSEL": "YUNC",
+        "AMOS_CODE": "270"
+    },
+    {
+        "VSL_NAME": "YM UNIFORM 團明",
+        "IMO_NO": "9337482",
+        "VESSEL": "YUNI",
+        "AMOS_CODE": "261"
+    },
+    {
+        "VSL_NAME": "YM UNIFORMITY 結明",
+        "IMO_NO": "9462691",
+        "VESSEL": "YUNF",
+        "AMOS_CODE": "266"
+    },
+    {
+        "VSL_NAME": "YM UPWARD 常明",
+        "IMO_NO": "9337468",
+        "VESSEL": "YUPW",
+        "AMOS_CODE": "259"
+    },
+    {
+        "VSL_NAME": "YM UBIQUITY 恆明",
+        "IMO_NO": "9462706",
+        "VESSEL": "YUBI",
+        "AMOS_CODE": "267"
+    },
+    {
+        "VSL_NAME": "YM UPSURGENCE 運明",
+        "IMO_NO": "9462720",
+        "VESSEL": "YUPS",
+        "AMOS_CODE": "269"
+    },
+    {
+        "VSL_NAME": "YM UTILITY 安明",
+        "IMO_NO": "9337470",
+        "VESSEL": "YUTI",
+        "AMOS_CODE": "260"
+    },
+    {
+        "VSL_NAME": "YM WEALTH 財明",
+        "IMO_NO": "9278088",
+        "VESSEL": "MWLH",
+        "AMOS_CODE": "229"
+    },
+    {
+        "VSL_NAME": "YM WISDOM 承明",
+        "IMO_NO": "9757216",
+        "VESSEL": "YWDM",
+        "AMOS_CODE": "301"
+    },
+    {
+        "VSL_NAME": "YM WARRANTY 鼎明",
+        "IMO_NO": "9757228",
+        "VESSEL": "YWTY",
+        "AMOS_CODE": ""
+    },
+    {
+        "VSL_NAME": "YM WELLSPRING 世明",
+        "IMO_NO": "9757230",
+        "VESSEL": "YWSG",
+        "AMOS_CODE": ""
+    },
+    {
+        "VSL_NAME": "YM WELLBEING 旺明",
+        "IMO_NO": "9820908",
+        "VESSEL": "YWEG",
+        "AMOS_CODE": ""
+    },
+    {
+        "VSL_NAME": "YM WONDERLAND 景明",
+        "IMO_NO": "9820910",
+        "VESSEL": "YWLD",
+        "AMOS_CODE": "302"
+    }
+  ]

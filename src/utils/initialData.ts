@@ -6,8 +6,8 @@ export const getInitialState = (): ReeferFormState => {
   const defaultState: ReeferFormState = {
     category: 'WEB_FFS',
     formType: 'reefer_bonus',
-    imo: '9319131',
-    vesselName: 'YM IMMENSE 雲明',
+    imo: '',
+    vesselName: '',
     vesselStatus: 'own vessel',
     voyage: '',
     printPortInput: '',
