@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ReeferContainer, TempRecord } from '../types/reefer';
 import { Plus, Trash2, Zap, X } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
@@ -23,8 +23,6 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
   onAutoGenerateAllTemp,
   onClose,
 }) => {
-  const [quickAddCount, setQuickAddCount] = useState<number>(5);
-
   if (!selectedContainer) {
     return (
       <div className="panel-card">
@@ -118,7 +116,7 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
           </div>
         </div>
 
-        {/* Quick Add Toolbar */}
+        {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
           <button
             className="btn btn-primary btn-circle"
@@ -127,26 +125,6 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
           >
             <Plus size={16} />
           </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#64748b' }}>
-            <span>快速新增 →</span>
-            <input
-              type="number"
-              className="input-control"
-              style={{ width: '48px', height: '28px', textAlign: 'center' }}
-              value={quickAddCount}
-              onChange={(e) => setQuickAddCount(parseInt(e.target.value) || 1)}
-              min={1}
-              max={30}
-            />
-            <button
-              className="btn btn-primary"
-              style={{ height: '28px', padding: '0 10px', fontSize: '12px' }}
-              onClick={() => onAddTempRecord(selectedContainer.id, quickAddCount)}
-            >
-              新增
-            </button>
-          </div>
         </div>
 
         {/* Temperature Log Table */}
