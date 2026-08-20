@@ -37,7 +37,6 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   onShowTemp,
   showTempContainerId,
 }) => {
-  const [quickAddCount, setQuickAddCount] = useState<number>(5);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
   const [selectedDischargePort, setSelectedDischargePort] = useState<string>('');
@@ -296,26 +295,6 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             >
               <Plus size={16} />
             </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b' }}>
-              <span>快速新增 →</span>
-              <input
-                type="number"
-                className="input-control"
-                style={{ width: '48px', height: '28px', textAlign: 'center' }}
-                value={quickAddCount}
-                onChange={(e) => setQuickAddCount(parseInt(e.target.value) || 1)}
-                min={1}
-                max={50}
-              />
-              <button
-                className="btn btn-primary"
-                style={{ height: '28px', padding: '0 10px', fontSize: '12px' }}
-                onClick={() => onAddContainer(quickAddCount)}
-              >
-                新增
-              </button>
-            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
