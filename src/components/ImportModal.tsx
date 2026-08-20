@@ -28,6 +28,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [importType, setImportType] = useState<ImportType>('AUTO');
   const [duplicateMode, setDuplicateMode] = useState<DuplicateMode>('allow_duplicate');
   const [rawText, setRawText] = useState<string>('');
+  const [uploadedContent, setUploadedContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
 
   if (!isOpen) return null;
@@ -39,14 +40,28 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const content = evt.target?.result as string;
-      setRawText(content);
+      const content = (evt.target?.result as string) || '';
+      setUploadedContent(content);
+
+      const isXml =
+        file.name.toLowerCase().endsWith('.xml') ||
+        content.trim().startsWith('<?xml') ||
+        content.includes('<my:group1>') ||
+        content.includes('<group1>');
+
+      if (isXml) {
+        // XML 檔案不放入下方文字框，維持文字框乾淨
+        setRawText('');
+      } else {
+        // TXT 檔案則將內容顯示於文字框中
+        setRawText(content);
+      }
     };
     reader.readAsText(file);
   };
 
   const handleImportSubmit = () => {
-    const text = rawText.trim();
+    const text = (uploadedContent || rawText).trim();
     if (!text) {
       alert('請先選擇上傳檔案，或在下方文字框中貼上內容！');
       return;
@@ -396,6 +411,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               value={rawText}
               onChange={(e) => {
                 setRawText(e.target.value);
+                setUploadedContent('');
                 if (fileName) setFileName('');
               }}
             />
