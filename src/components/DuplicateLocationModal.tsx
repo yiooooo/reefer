@@ -74,7 +74,7 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
   return (
     <div className="modal-overlay z-1100" onClick={onClose}>
       <div
-        className="modal-card border border-amber-300 shadow-2xl max-w-580px w-[92%]"
+        className="modal-card border border-amber-300 shadow-2xl max-w-155 w-[92%]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
