@@ -82,13 +82,13 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   const getContainerStatus = (c: ReeferContainer): 'discharged' | 'onboard' | 'waiting' => {
     if (c.dischargeDatetime?.trim()) return 'discharged'; // 已卸櫃 🟢
     if (c.loadingDatetime?.trim()) return 'onboard';     // 已上船未卸 🟡
-    return 'waiting';                                     // 未裝船 🔴
+    return 'waiting';                                     // 未裝船 ⚪
   };
 
   const STATUS_DOT: Record<string, { color: string; title: string }> = {
     discharged: { color: '#22c55e', title: '已卸櫃' },
     onboard: { color: '#f59e0b', title: '已上船未卸櫃' },
-    waiting: { color: '#ef4444', title: '未裝船' },
+    waiting: { color: '#94a3b8', title: '未裝船' },
   };
 
   const isContainerDischarged = (c: ReeferContainer) =>
@@ -493,7 +493,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                   return (
                     <tr
                       key={cnt.id}
-                      className={isSelected ? 'selected' : ''}
+                      className={`status-${status} ${isSelected ? 'selected' : ''}`}
                       onClick={() => onSelectContainer(cnt.id)}
                       style={{ cursor: 'pointer' }}
                     >

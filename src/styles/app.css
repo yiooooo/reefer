@@ -308,13 +308,49 @@ input[type="file"]::-webkit-file-upload-button:hover {
   border-bottom: none;
 }
 
+.data-table tr:hover {
+  background: #f8fafc;
+}
+
 .data-table tr.selected {
-  background: #f0f9ff;
+  background: #e0f2fe;
   border-left: 3px solid #0284c7;
 }
 
-.data-table tr:hover {
+/* 🟢 已卸櫃 */
+.data-table tr.status-discharged:hover {
+  background: #f0fdf4;
+}
+.data-table tr.status-discharged.selected {
+  background: #dcfce7;
+  border-left: 3px solid #16a34a;
+}
+.data-table tr.status-discharged.selected:hover {
+  background: #bbf7d0;
+}
+
+/* 🟡 未卸櫃 */
+.data-table tr.status-onboard:hover {
+  background: #fffbeb;
+}
+.data-table tr.status-onboard.selected {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+}
+.data-table tr.status-onboard.selected:hover {
+  background: #fde68a;
+}
+
+/* ⚪ 未裝船 */
+.data-table tr.status-waiting:hover {
   background: #f8fafc;
+}
+.data-table tr.status-waiting.selected {
+  background: #f1f5f9;
+  border-left: 3px solid #94a3b8;
+}
+.data-table tr.status-waiting.selected:hover {
+  background: #e2e8f0;
 }
 
 /* ─── Crew Chips ─── */
