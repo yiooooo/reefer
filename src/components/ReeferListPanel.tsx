@@ -1,12 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { ReeferContainer } from '../types/reefer';
-import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, SlidersHorizontal, PackageSearch, Upload, Thermometer, XCircle, AlertTriangle, Snowflake, Package, CheckCircle2 } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
 import { formatTempNumber } from '../utils/tempGenerator';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
 type FilterMode = 'all' | 'discharged' | 'not_discharged';
+
+type StatCardDef = {
+  key: FilterMode;
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  active: string;   // Tailwind classes when selected
+  inactive: string; // Tailwind classes when not selected
+  iconActive: string;
+  iconInactive: string;
+};
 
 const FIXED_CREW_ROLES = ['C/O', '2/O', '3/O', '3/E'];
 
@@ -114,6 +125,39 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
 
   const hasActiveFilters = Boolean(selectedDischargePort || selectedLoadingPort || searchKeyword.trim());
   const notDischargedCount = containers.length - dischargedCount;
+
+  const statCards: StatCardDef[] = [
+    {
+      key: 'all',
+      icon: <Snowflake className="w-6 h-6" />,
+      label: '全部冷櫃',
+      count: containers.length,
+      active: 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-200',
+      inactive: 'bg-sky-50/80 border-sky-200 text-sky-900 hover:bg-sky-100 hover:border-sky-300',
+      iconActive: 'bg-white/20 text-white',
+      iconInactive: 'bg-sky-200/70 text-sky-700',
+    },
+    {
+      key: 'not_discharged',
+      icon: <Package className="w-6 h-6" />,
+      label: '未卸櫃',
+      count: notDischargedCount,
+      active: 'bg-amber-500 border-amber-400 text-white shadow-md shadow-amber-200',
+      inactive: 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100 hover:border-amber-300',
+      iconActive: 'bg-white/20 text-white',
+      iconInactive: 'bg-amber-200/70 text-amber-700',
+    },
+    {
+      key: 'discharged',
+      icon: <CheckCircle2 className="w-6 h-6" />,
+      label: '已卸櫃',
+      count: dischargedCount,
+      active: 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-200',
+      inactive: 'bg-emerald-50/80 border-emerald-200 text-emerald-900 hover:bg-emerald-100 hover:border-emerald-300',
+      iconActive: 'bg-white/20 text-white',
+      iconInactive: 'bg-emerald-200/70 text-emerald-700',
+    },
+  ];
 
   const handleInputKeyDown = (
     e: React.KeyboardEvent<HTMLElement>,
@@ -231,29 +275,27 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex border border-border rounded-lg overflow-hidden text-[11px] mt-1">
-          {(
-            [
-              { key: 'all', label: `全部 (${containers.length})` },
-              { key: 'not_discharged', label: `未卸櫃 (${notDischargedCount})` },
-              { key: 'discharged', label: `已卸櫃 (${dischargedCount})` },
-            ] as { key: FilterMode; label: string }[]
-          ).map(({ key, label }, i, arr) => (
-            <button
-              key={key}
-              onClick={() => setFilterMode(key)}
-              className={[
-                'flex-1 py-1.5 px-1 font-medium transition-colors border-0 cursor-pointer text-[11px]',
-                i < arr.length - 1 ? 'border-r border-border' : '',
-                filterMode === key
-                  ? 'bg-sky-600 text-white font-bold'
-                  : 'bg-transparent text-slate-500 hover:bg-slate-50',
-              ].join(' ')}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Filter Stat Cards */}
+        <div className="grid grid-cols-3 gap-2.5 mt-1">
+          {statCards.map(({ key, icon, label, count, active, inactive, iconActive, iconInactive }) => {
+            const isActive = filterMode === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilterMode(key)}
+                className={`relative flex items-center justify-between rounded-xl px-3.5 py-2 text-left border-2 cursor-pointer transition-all ${isActive ? active : inactive}`}
+              >
+                <div className="flex flex-col min-w-0 pr-2">
+                  <span className="text-xs font-semibold tracking-wide opacity-90 leading-tight truncate">{label}</span>
+                  <span className="text-2xl font-black tracking-tight tabular-nums mt-0.5 leading-none">{count}</span>
+                </div>
+                <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${isActive ? iconActive : iconInactive}`}>
+                  {icon}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Action Toolbar */}
@@ -346,7 +388,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center gap-1 flex-1 min-w-[120px]">
+            <div className="flex items-center gap-1 flex-1 min-w-30">
               <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">搜尋:</span>
               <Input
                 type="text"
