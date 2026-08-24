@@ -1,5 +1,13 @@
 import React from 'react';
-import { AlertTriangle, X, RotateCcw } from 'lucide-react';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog';
+import { Button } from './ui/button';
 
 interface ResetConfirmModalProps {
   isOpen: boolean;
@@ -12,54 +20,30 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
   onClose,
   onConfirm,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#dc2626' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                background: '#fef2f2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <AlertTriangle size={20} color="#dc2626" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-110" showCloseButton={false}>
+        <DialogHeader className="border-b-0 pb-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+              <AlertTriangle size={20} className="text-red-600" />
             </div>
-            <span style={{ fontSize: '16px', fontWeight: 700 }}>重置表單確認</span>
+            <DialogTitle className="text-base font-bold text-red-600">重置表單確認</DialogTitle>
           </div>
-          <button
-            type="button"
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </div>
+        </DialogHeader>
 
-        <div className="modal-body" style={{ paddingTop: '12px' }}>
-          <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
+        <div className="px-6 py-4">
+          <p className="text-sm text-slate-500 leading-relaxed">
             您確定要重置冷櫃獎金申請單嗎？此操作將會清空目前所有已輸入的航次、櫃號與每日巡櫃記錄，且無法復原。
           </p>
         </div>
 
-        <div className="modal-footer" style={{ background: '#ffffff', borderTop: 'none' }}>
-          <button className="btn" onClick={onClose}>
+        <DialogFooter className="border-t-0 bg-white">
+          <Button variant="outline" onClick={onClose}>
             取消
-          </button>
-          <button
-            className="btn"
-            style={{
-              background: '#dc2626',
-              borderColor: '#dc2626',
-              color: '#ffffff',
-            }}
+          </Button>
+          <Button
+            variant="destructive"
             onClick={() => {
               onConfirm();
               onClose();
@@ -67,9 +51,9 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
           >
             <RotateCcw size={14} />
             確定清空重置
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -3,6 +3,9 @@ import { ReeferContainer, TempRecord } from '../types/reefer';
 import { Plus, Trash2, Zap, X } from 'lucide-react';
 import { DatetimePicker24h } from './DatetimePicker24h';
 import { formatTempNumber } from '../utils/tempGenerator';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 
 interface TempRecordingPanelProps {
   selectedContainer: ReeferContainer | null;
@@ -52,79 +55,67 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
         <div className="panel-title">
           <span className="icon-accent">📎</span> 每日溫度記錄 (Temperature Recording)
         </div>
-        <button
+        <Button
           type="button"
-          style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', padding: '2px' }}
+          variant="ghost"
+          size="icon-sm"
           onClick={onClose}
           title="關閉溫度記錄"
+          className="text-slate-400 hover:text-slate-600"
         >
-          <X size={16} />
-        </button>
+          <X size={15} />
+        </Button>
       </div>
 
       <div className="panel-body">
-        {/* Badges & Auto-Gen Toolbar Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="badge-pill-cyan" title={`航程涵蓋 ${selectedContainer.days || daysCount} 天，已紀錄 ${daysCount} 筆巡溫`}>
-              紀錄天數: {selectedContainer.days || daysCount} 天 ({daysCount} 筆紀錄)
-            </span>
-            <span className="badge-pill-indigo">
+        {/* Badges & Auto-Gen Toolbar */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="success" title={`航程涵蓋 ${selectedContainer.days || daysCount} 天，已紀錄 ${daysCount} 筆巡溫`}>
+              紀錄天數: {selectedContainer.days || daysCount} 天 ({daysCount} 筆)
+            </Badge>
+            <Badge variant="indigo">
               計算獎金: ${bonusCash} NTD
-            </span>
+            </Badge>
           </div>
 
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <div className="flex gap-1.5 flex-wrap">
             {/* Single container auto-generate */}
-            <button
-              className="btn btn-primary"
-              style={{
-                background: hasDatetimes
-                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                  : '#cbd5e1',
-                borderColor: hasDatetimes ? '#10b981' : '#cbd5e1',
-                color: '#ffffff',
-                boxShadow: hasDatetimes ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none',
-                cursor: hasDatetimes ? 'pointer' : 'not-allowed',
-                opacity: hasDatetimes ? 1 : 0.6,
-              }}
-              onClick={() => hasDatetimes && onAutoGenerateTemp(selectedContainer.id)}
+            <Button
               disabled={!hasDatetimes}
+              onClick={() => hasDatetimes && onAutoGenerateTemp(selectedContainer.id)}
               title={hasDatetimes
                 ? '依設定溫度 (±0.5°C) 及裝卸時間範圍，一鍵自動產生此櫃巡溫紀錄'
                 : '請先同時填寫裝船與卸船日期時間方可自動生成溫度'}
+              className={hasDatetimes
+                ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600'
+                : ''}
             >
-              <Zap size={14} />
+              <Zap size={13} />
               自動生成
-            </button>
+            </Button>
 
             {/* Batch all containers auto-generate */}
-            <button
-              className="btn btn-primary"
-              style={{
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                borderColor: '#0284c7',
-                color: '#ffffff',
-                boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
-              }}
+            <Button
               onClick={onAutoGenerateAllTemp}
               title="對整筆清單中所有已填寫卸船日期時間的冷櫃，一次批次自動生成巡溫紀錄"
             >
-              <Zap size={14} />
+              <Zap size={13} />
               全部清單生成
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-          <button
-            className="btn btn-primary btn-circle"
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            size="icon-sm"
             onClick={() => onAddTempRecord(selectedContainer.id, 1)}
             title="新增 1 筆空白記錄"
+            className="rounded-full"
           >
-            <Plus size={16} />
-          </button>
+            <Plus size={15} />
+          </Button>
         </div>
 
         {/* Temperature Log Table */}
@@ -150,65 +141,63 @@ export const TempRecordingPanel: React.FC<TempRecordingPanelProps> = ({
               ) : (
                 selectedContainer.tempRecords.map((rec) => (
                   <tr key={rec.id}>
-                  <td>
-                    <DatetimePicker24h
-                      value={rec.dateLog}
-                      onChange={(val) => onUpdateTempRecord(selectedContainer.id, rec.id, 'dateLog', val)}
-                      showTime={false}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-control"
-                      style={{ height: '28px', fontSize: '12px', padding: '2px 4px', width: '48px' }}
-                      value={rec.df1}
-                      onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df1', e.target.value)}
-                      onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df1', formatTempNumber(e.target.value))}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-control"
-                      style={{ height: '28px', fontSize: '12px', padding: '2px 4px', width: '48px' }}
-                      value={rec.df2}
-                      onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df2', e.target.value)}
-                      onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df2', formatTempNumber(e.target.value))}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-control"
-                      style={{ height: '28px', fontSize: '12px', padding: '2px 4px', width: '48px' }}
-                      value={rec.df3}
-                      onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df3', e.target.value)}
-                      onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df3', formatTempNumber(e.target.value))}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-control"
-                      style={{ height: '28px', fontSize: '12px', padding: '2px 4px' }}
-                      value={rec.remark}
-                      onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'remark', e.target.value)}
-                    />
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444' }}
-                      onClick={() => onDeleteTempRecord(selectedContainer.id, rec.id)}
-                      title="刪除記錄"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+                    <td>
+                      <DatetimePicker24h
+                        value={rec.dateLog}
+                        onChange={(val) => onUpdateTempRecord(selectedContainer.id, rec.id, 'dateLog', val)}
+                        showTime={false}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="text"
+                        className="w-16"
+                        value={rec.df1}
+                        onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df1', e.target.value)}
+                        onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df1', formatTempNumber(e.target.value))}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="text"
+                        className="w-16"
+                        value={rec.df2}
+                        onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df2', e.target.value)}
+                        onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df2', formatTempNumber(e.target.value))}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="text"
+                        className="w-16"
+                        value={rec.df3}
+                        onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df3', e.target.value)}
+                        onBlur={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'df3', formatTempNumber(e.target.value))}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="text"
+                        className="min-w-10"
+                        value={rec.remark}
+                        onChange={(e) => onUpdateTempRecord(selectedContainer.id, rec.id, 'remark', e.target.value)}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-red-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => onDeleteTempRecord(selectedContainer.id, rec.id)}
+                        title="刪除記錄"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

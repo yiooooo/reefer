@@ -1,7 +1,25 @@
 import React, { useState } from 'react';
-import { X, Upload, CheckCircle, FileText } from 'lucide-react';
+import { Upload, CheckCircle, FileText } from 'lucide-react';
 import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
 import { calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 export type DuplicateMode = 'allow_duplicate' | 'update_existing' | 'skip_existing';
 export type ImportType = 'AUTO' | 'XML' | 'SUPERCARGO' | 'MACS3';
@@ -30,8 +48,6 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [rawText, setRawText] = useState<string>('');
   const [uploadedContent, setUploadedContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
-
-  if (!isOpen) return null;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,7 +89,6 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     const isXmlContent = text.startsWith('<?xml') || text.includes('<my:group1>') || text.includes('<group1>');
 
     if (isXmlContent || importType === 'XML') {
-      // 1. InfoPath XML / 標準 XML 解析器
       try {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(text, 'text/xml');
@@ -305,108 +320,85 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: '640px', width: '92%' }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Upload size={18} color="#0284c7" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-160 w-[92%]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload size={16} className="text-sky-600" />
             Import File / Text 匯入冷櫃與巡櫃資料
-          </span>
-          <button
-            type="button"
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-          {/* 上傳檔案區塊 */}
-          <div className="form-group">
-            <label className="form-label">選擇檔案上傳 (.xml / .txt)</label>
-            <div className="relative">
-              <input
-                type="file"
-                accept=".xml,.txt"
-                onChange={handleFileUpload}
-                className="input-control cursor-pointer border border-slate-300 rounded-lg p-1.5 bg-slate-50 text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer transition-all"
-                style={{ height: '38px' }}
-              />
-            </div>
+        <div className="px-6 py-4 flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
+          {/* 上傳檔案 */}
+          <div className="flex flex-col gap-1.5">
+            <Label>選擇檔案上傳 (.xml / .txt)</Label>
+            <Input
+              type="file"
+              accept=".xml,.txt"
+              onChange={handleFileUpload}
+              className="h-9 cursor-pointer file:mr-3 file:py-1.5 file:px-3.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-700 file:cursor-pointer"
+            />
             {fileName && (
-              <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1.5 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1 w-fit">
-                <CheckCircle size={14} /> 已載入檔案: {fileName}
+              <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-0.5 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1 w-fit">
+                <CheckCircle size={13} /> 已載入檔案: {fileName}
               </span>
             )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">選擇匯入格式 / 自動偵測</label>
-            <select
-              className="input-control"
+          {/* 匯入格式 */}
+          <div className="flex flex-col gap-1.5">
+            <Label>選擇匯入格式 / 自動偵測</Label>
+            <Select
               value={importType}
-              onChange={(e) => setImportType(e.target.value as ImportType)}
+              onValueChange={(val) => setImportType(val as ImportType)}
             >
-              <option value="AUTO">自動判斷 (Auto Detect XML / Text)</option>
-              <option value="XML">InfoPath XML / 標準 XML 報表</option>
-              <option value="SUPERCARGO">SUPERCARGO TXT 格式</option>
-              <option value="MACS3">MACS3 TXT 格式</option>
-            </select>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="請選擇匯入格式" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AUTO">自動判斷 (Auto Detect XML / Text)</SelectItem>
+                <SelectItem value="XML">InfoPath XML / 標準 XML 報表</SelectItem>
+                <SelectItem value="SUPERCARGO">SUPERCARGO TXT 格式</SelectItem>
+                <SelectItem value="MACS3">MACS3 TXT 格式</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="form-group" style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <label className="form-label" style={{ marginBottom: '8px' }}>重複櫃號處理原則</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="duplicateMode"
-                  value="allow_duplicate"
-                  checked={duplicateMode === 'allow_duplicate'}
-                  onChange={() => setDuplicateMode('allow_duplicate')}
-                />
-                直接追加所有冷櫃 (允許相同櫃號重複出現)
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="duplicateMode"
-                  value="update_existing"
-                  checked={duplicateMode === 'update_existing'}
-                  onChange={() => setDuplicateMode('update_existing')}
-                />
-                自動覆蓋更新 (相同櫃號時更新現有資料，新櫃號追加)
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="duplicateMode"
-                  value="skip_existing"
-                  checked={duplicateMode === 'skip_existing'}
-                  onChange={() => setDuplicateMode('skip_existing')}
-                />
-                自動跳過重複櫃號 (忽略現有清單中已存在的櫃號)
-              </label>
+          {/* 重複櫃號處理原則 */}
+          <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-lg border border-border">
+            <Label className="mb-1">重複櫃號處理原則</Label>
+            <div className="flex flex-col gap-2 text-xs text-slate-700">
+              {(
+                [
+                  { value: 'allow_duplicate', label: '直接追加所有冷櫃 (允許相同櫃號重複出現)' },
+                  { value: 'update_existing', label: '自動覆蓋更新 (相同櫃號時更新現有資料，新櫃號追加)' },
+                  { value: 'skip_existing', label: '自動跳過重複櫃號 (忽略現有清單中已存在的櫃號)' },
+                ] as { value: DuplicateMode; label: string }[]
+              ).map(({ value, label }) => (
+                <label key={value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="duplicateMode"
+                    value={value}
+                    checked={duplicateMode === value}
+                    onChange={() => setDuplicateMode(value)}
+                    className="accent-sky-600"
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* 貼上 TXT 內容欄位 (置於最下方) */}
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileText size={14} color="#0284c7" />
+          {/* 貼上 TXT */}
+          <div className="flex flex-col gap-1.5">
+            <Label className="flex items-center gap-1.5">
+              <FileText size={13} className="text-sky-600" />
               或直接在此貼上 TXT 內容
-            </label>
-            <textarea
-              className="input-control"
-              style={{
-                width: '100%',
-                height: '140px',
-                fontFamily: 'monospace',
-                fontSize: '11px',
-                padding: '8px',
-                resize: 'vertical',
-              }}
+            </Label>
+            <Textarea
+              className="min-h-32.5 font-mono text-[11px] resize-y"
               placeholder="請直接剪貼 TXT 文字內容於此..."
               value={rawText}
               onChange={(e) => {
@@ -418,15 +410,15 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button className="btn" onClick={onClose}>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>
             取消
-          </button>
-          <button className="btn btn-primary" onClick={handleImportSubmit}>
+          </Button>
+          <Button size="sm" onClick={handleImportSubmit}>
             開始匯入
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

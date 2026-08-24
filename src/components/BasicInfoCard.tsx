@@ -1,6 +1,9 @@
 import React, { useMemo, useEffect } from 'react';
 import { Printer, Ship, FileCheck } from 'lucide-react';
 import { ReeferContainer } from '../types/reefer';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
 
 interface BasicInfoCardProps {
   vesselStatus: 'own vessel' | 'chartered vessel';
@@ -95,10 +98,9 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           </div>
 
           <div className="config-item">
-            <span className="form-label">航次 (Voyage)：</span>
-            <input
+            <Label className="whitespace-nowrap">航次 (Voyage)：</Label>
+            <Input
               type="text"
-              className="input-control"
               style={{ width: '150px' }}
               value={voyage}
               onChange={(e) => onVoyageChange(e.target.value)}
@@ -115,7 +117,7 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           <div className="config-item">
             <FileCheck size={16} color="#0284c7" />
             <select
-              className="input-control"
+              className="h-[34px] px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
               style={{ width: '130px' }}
               value={printType}
               onChange={(e) => onPrintTypeChange(e.target.value as 'LOADPRINT' | 'DISCHARGEPRINT')}
@@ -126,9 +128,9 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           </div>
 
           <div className="config-item">
-            <span className="form-label">交接港口：</span>
+            <Label className="whitespace-nowrap">交接港口：</Label>
             <select
-              className="input-control"
+              className="h-[34px] px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
               style={{ width: '130px' }}
               value={printPortInput}
               onChange={(e) => onPrintPortInputChange(e.target.value)}
@@ -147,14 +149,14 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
             </select>
           </div>
 
-          <button className="btn btn-primary" onClick={onPrint} title="列印船岸交接單">
-            <Printer size={15} />
+          <Button onClick={onPrint} title="列印船岸交接單">
+            <Printer size={14} />
             列印交接單
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* 總金額 Badge Card (位置改移至船岸交接單右側) */}
+      {/* 總金額 Badge */}
       {totalCash !== undefined && (
         <div className="badge-total-cash" style={{ alignSelf: 'stretch', justifyContent: 'center' }}>
           <span className="amount">總金額 : ${totalCash} NTD</span>
