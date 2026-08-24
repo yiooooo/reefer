@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
+import { useTranslation } from '../i18n/LanguageContext';
 
 export type DuplicateMode = 'allow_duplicate' | 'update_existing' | 'skip_existing';
 export type ImportType = 'AUTO' | 'XML' | 'SUPERCARGO' | 'MACS3';
@@ -43,6 +44,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   onClose,
   onImportContainers,
 }) => {
+  const { t } = useTranslation();
   const [importType, setImportType] = useState<ImportType>('AUTO');
   const [duplicateMode, setDuplicateMode] = useState<DuplicateMode>('allow_duplicate');
   const [rawText, setRawText] = useState<string>('');
@@ -79,7 +81,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const handleImportSubmit = () => {
     const text = (uploadedContent || rawText).trim();
     if (!text) {
-      alert('請先選擇上傳檔案，或在下方文字框中貼上內容！');
+      alert(t('importModal.selectFileError'));
       return;
     }
 
@@ -311,7 +313,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
 
     if (importedList.length === 0) {
-      alert('無法解析輸入的資料內容，請確認格式是否正確。');
+      alert(t('importModal.parseError'));
       return;
     }
 
@@ -325,14 +327,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload size={16} className="text-sky-600" />
-            Import File / Text 匯入冷櫃與巡櫃資料
+            {t('importModal.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="px-6 py-4 flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
           {/* 上傳檔案 */}
           <div className="flex flex-col gap-1.5">
-            <Label>選擇檔案上傳 (.xml / .txt)</Label>
+            <Label>{t('importModal.fileLabel')}</Label>
             <Input
               type="file"
               accept=".xml,.txt"
@@ -341,39 +343,39 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             />
             {fileName && (
               <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-0.5 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1 w-fit">
-                <CheckCircle size={13} /> 已載入檔案: {fileName}
+                <CheckCircle size={13} /> {t('importModal.fileLoaded')} {fileName}
               </span>
             )}
           </div>
 
           {/* 匯入格式 */}
           <div className="flex flex-col gap-1.5">
-            <Label>選擇匯入格式 / 自動偵測</Label>
+            <Label>{t('importModal.formatLabel')}</Label>
             <Select
               value={importType}
               onValueChange={(val) => setImportType(val as ImportType)}
             >
               <SelectTrigger className="h-8">
-                <SelectValue placeholder="請選擇匯入格式" />
+                <SelectValue placeholder={t('importModal.formatLabel')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="AUTO">自動判斷 (Auto Detect XML / Text)</SelectItem>
-                <SelectItem value="XML">InfoPath XML / 標準 XML 報表</SelectItem>
-                <SelectItem value="SUPERCARGO">SUPERCARGO TXT 格式</SelectItem>
-                <SelectItem value="MACS3">MACS3 TXT 格式</SelectItem>
+                <SelectItem value="AUTO">{t('importModal.formatAuto')}</SelectItem>
+                <SelectItem value="XML">{t('importModal.formatXml')}</SelectItem>
+                <SelectItem value="SUPERCARGO">{t('importModal.formatSupercargo')}</SelectItem>
+                <SelectItem value="MACS3">{t('importModal.formatMacs3')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* 重複櫃號處理原則 */}
           <div className="flex flex-col gap-2 bg-slate-50 p-3 rounded-lg border border-border">
-            <Label className="mb-1">重複櫃號處理原則</Label>
+            <Label className="mb-1">{t('importModal.duplicateRuleLabel')}</Label>
             <div className="flex flex-col gap-2 text-xs text-slate-700">
               {(
                 [
-                  { value: 'allow_duplicate', label: '直接追加所有冷櫃 (允許相同櫃號重複出現)' },
-                  { value: 'update_existing', label: '自動覆蓋更新 (相同櫃號時更新現有資料，新櫃號追加)' },
-                  { value: 'skip_existing', label: '自動跳過重複櫃號 (忽略現有清單中已存在的櫃號)' },
+                  { value: 'allow_duplicate', label: t('importModal.dupAllow') },
+                  { value: 'update_existing', label: t('importModal.dupUpdate') },
+                  { value: 'skip_existing', label: t('importModal.dupSkip') },
                 ] as { value: DuplicateMode; label: string }[]
               ).map(({ value, label }) => (
                 <label key={value} className="flex items-center gap-2 cursor-pointer">
@@ -395,11 +397,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           <div className="flex flex-col gap-1.5">
             <Label className="flex items-center gap-1.5">
               <FileText size={13} className="text-sky-600" />
-              或直接在此貼上 TXT 內容
+              {t('importModal.directPasteLabel')}
             </Label>
             <Textarea
               className="min-h-32.5 font-mono text-[11px] resize-y"
-              placeholder="請直接剪貼 TXT 文字內容於此..."
+              placeholder={t('importModal.pastePlaceholder')}
               value={rawText}
               onChange={(e) => {
                 setRawText(e.target.value);
@@ -411,11 +413,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            取消
+          <Button variant="outline" onClick={onClose}>
+            {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleImportSubmit}>
-            開始匯入
+          <Button onClick={handleImportSubmit}>
+            {t('importModal.importConfirmBtn')}
           </Button>
         </DialogFooter>
       </DialogContent>

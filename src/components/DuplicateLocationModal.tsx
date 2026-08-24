@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import { Button } from './ui/button';
+import { useTranslation } from '../i18n/LanguageContext';
 
 export interface DuplicateLocationConflict {
   location: string;
@@ -45,7 +46,7 @@ export function findDuplicateLocations(containers: ReeferContainer[]): Duplicate
       }
       map.get(loc)!.push({
         id: cnt.id,
-        containerNumber: cnt.containerNumber.trim() || `(未填櫃號 #${idx + 1})`,
+        containerNumber: cnt.containerNumber.trim(),
         index: idx + 1,
         loadingPort: cnt.loadingPort,
         dischargePort: cnt.dischargePort,
@@ -77,6 +78,8 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
   onClose,
   duplicates,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={isOpen && duplicates.length > 0} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-115 w-[92%] border-amber-300" showCloseButton={false}>
@@ -87,9 +90,9 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
               <div className="flex flex-col gap-0.5">
-                <DialogTitle className="text-amber-900">裝載位置重複提醒</DialogTitle>
+                <DialogTitle className="text-amber-900">{t('duplicateModal.title')}</DialogTitle>
                 <div className="text-xs font-medium text-amber-700">
-                  偵測到 {duplicates.length} 組裝載位置發生衝突
+                  {duplicates.length} {t('duplicateModal.totalSlots')}
                 </div>
               </div>
             </div>
@@ -107,7 +110,7 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
 
         <div className="px-5 py-4 flex flex-col gap-4 max-h-[65vh] overflow-y-auto">
           <div className="text-sm text-slate-600 leading-relaxed">
-            同一個裝載位置不應同時有多個未卸櫃貨櫃。請核對以下重複位置與對應櫃號：
+            {t('duplicateModal.warningDesc')}
           </div>
 
           <div className="flex flex-col gap-4">
@@ -120,11 +123,11 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
                     <span className="font-bold text-amber-950 text-sm">
-                      裝載位置：<span className="font-mono text-sm font-bold bg-amber-100 text-amber-950 px-2.5 py-1 rounded-md border border-amber-300 ml-1">{dup.location}</span>
+                      {t('duplicateModal.location')}：<span className="font-mono text-sm font-bold bg-amber-100 text-amber-950 px-2.5 py-1 rounded-md border border-amber-300 ml-1">{dup.location}</span>
                     </span>
                   </div>
                   <span className="text-xs font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded">
-                    共 {dup.containers.length} 筆重複
+                    {dup.containers.length} {t('duplicateModal.totalSlots')}
                   </span>
                 </div>
 
@@ -136,11 +139,11 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-slate-400 text-xs min-w-6">#{c.index}</span>
-                        <span className="font-mono font-bold text-slate-900 text-sm tracking-wide">{c.containerNumber}</span>
+                        <span className="font-mono font-bold text-slate-900 text-sm tracking-wide">{c.containerNumber || '--'}</span>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-slate-600">
-                        <span>裝港: <strong className="text-sky-600 font-bold">{c.loadingPort || '-'}</strong></span>
-                        <span>卸港: <strong className="text-emerald-600 font-bold">{c.dischargePort || '-'}</strong></span>
+                        <span>{t('table.loadingPort')}: <strong className="text-sky-600 font-bold">{c.loadingPort || '-'}</strong></span>
+                        <span>{t('table.dischargePort')}: <strong className="text-emerald-600 font-bold">{c.dischargePort || '-'}</strong></span>
                       </div>
                     </div>
                   ))}
@@ -155,7 +158,7 @@ export const DuplicateLocationModal: React.FC<DuplicateLocationModalProps> = ({
             className="bg-amber-600 hover:bg-amber-700 border-amber-600 min-w-[100px]"
             onClick={onClose}
           >
-            我知道了
+            {t('duplicateModal.closeBtn')}
           </Button>
         </DialogFooter>
       </DialogContent>

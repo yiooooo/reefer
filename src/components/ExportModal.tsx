@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import { Button } from './ui/button';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -78,6 +79,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   formState,
 }) => {
+  const { t } = useTranslation();
   const xmlContent = buildExportXml(formState);
 
   const handleDownload = () => {
@@ -103,7 +105,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download size={16} className="text-sky-600" />
-            匯出 XML 報表
+            {t('exportModal.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -111,20 +113,20 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <div className="w-14 h-14 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
             <FileCheck2 size={28} />
           </div>
-          <div className="text-sm font-bold text-slate-800">匯出 XML 檔案</div>
-          <div className="text-xs text-slate-500 leading-relaxed">
-            冷櫃資料已準備完畢（共 {formState.containers.length} 筆資料）。<br />
-            點擊下方按鈕即可下載 `.xml` 檔案。
+          <div className="text-sm font-bold text-slate-800">{t('exportModal.title')}</div>
+          <div className="text-slate-500 leading-relaxed">
+            {t('exportModal.instruction')}<br />
+            ({t('exportModal.totalCount')} {formState.containers.length})
           </div>
         </div>
 
         <DialogFooter className="justify-center gap-2.5">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            取消
+          <Button variant="outline" onClick={onClose}>
+            {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleDownload} className="min-w-[130px]">
+          <Button onClick={handleDownload} className="min-w-[130px]">
             <Download size={14} />
-            下載 XML 檔案
+            {t('exportModal.exportBtn')}
           </Button>
         </DialogFooter>
       </DialogContent>

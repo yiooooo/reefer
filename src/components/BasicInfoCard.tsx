@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
+import { useTranslation } from '../i18n/LanguageContext';
 
 interface BasicInfoCardProps {
   vesselStatus: 'own vessel' | 'chartered vessel';
@@ -43,6 +44,8 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
   onPrintPortInputChange,
   onPrint,
 }) => {
+  const { t } = useTranslation();
+
   // 自動從冷櫃資料判讀不重複的「裝貨港」
   const loadingPorts = useMemo(() => {
     const ports = new Set<string>();
@@ -82,7 +85,7 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
     <div className="top-config-bar">
       {/* 基本資訊 Card */}
       <div className="config-card">
-        <span className="config-card-tag">基本資訊 (BASIC INFO)</span>
+        <span className="config-card-tag">{t('basicInfo.cardTag')}</span>
         <div className="config-card-body">
           <div className="config-item">
             <Ship size={16} color="#64748b" />
@@ -92,26 +95,26 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
                 className={`segmented-btn ${vesselStatus === 'own vessel' ? 'active' : ''}`}
                 onClick={() => onVesselStatusChange('own vessel')}
               >
-                自有船
+                {t('basicInfo.ownVessel')}
               </button>
               <button
                 type="button"
                 className={`segmented-btn ${vesselStatus === 'chartered vessel' ? 'active' : ''}`}
                 onClick={() => onVesselStatusChange('chartered vessel')}
               >
-                出租船
+                {t('basicInfo.charteredVessel')}
               </button>
             </div>
           </div>
 
           <div className="config-item">
-            <Label className="whitespace-nowrap">航次 (Voyage)：</Label>
+            <Label className="whitespace-nowrap">{t('basicInfo.voyage')}</Label>
             <Input
               type="text"
               style={{ width: '150px' }}
               value={voyage}
               onChange={(e) => onVoyageChange(e.target.value)}
-              placeholder="請輸入航次"
+              placeholder={t('basicInfo.voyagePlaceholder')}
             />
           </div>
         </div>
@@ -119,7 +122,7 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
 
       {/* 船岸交接單 Card */}
       <div className="config-card">
-        <span className="config-card-tag">船岸交接單 (HANDOVER FORM)</span>
+        <span className="config-card-tag">{t('basicInfo.handoverTag')}</span>
         <div className="config-card-body">
           <div className="config-item">
             <FileCheck size={16} color="#0284c7" />
@@ -128,24 +131,24 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
               onValueChange={(val) => onPrintTypeChange(val as 'LOADPRINT' | 'DISCHARGEPRINT')}
             >
               <SelectTrigger className="w-32.5">
-                <SelectValue placeholder="選擇類型" />
+                <SelectValue placeholder={t('basicInfo.selectType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="LOADPRINT">Loading</SelectItem>
-                <SelectItem value="DISCHARGEPRINT">Discharge</SelectItem>
+                <SelectItem value="LOADPRINT">{t('basicInfo.loadingType')}</SelectItem>
+                <SelectItem value="DISCHARGEPRINT">{t('basicInfo.dischargeType')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="config-item">
-            <Label className="whitespace-nowrap">交接港口：</Label>
+            <Label className="whitespace-nowrap">{t('basicInfo.handoverPort')}</Label>
             <Select
               value={printPortInput}
               onValueChange={onPrintPortInputChange}
               disabled={availablePorts.length === 0}
             >
               <SelectTrigger className="w-32.5">
-                <SelectValue placeholder={availablePorts.length === 0 ? "無港口資料" : "請選擇港口"} />
+                <SelectValue placeholder={availablePorts.length === 0 ? t('basicInfo.noPortData') : t('basicInfo.selectPort')} />
               </SelectTrigger>
               <SelectContent>
                 {availablePorts.map((port) => (
@@ -160,9 +163,9 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
             </Select>
           </div>
 
-          <Button onClick={onPrint} title="列印船岸交接單">
+          <Button onClick={onPrint} title={t('basicInfo.printHandover')}>
             <Printer size={14} />
-            列印交接單
+            {t('basicInfo.printHandover')}
           </Button>
         </div>
       </div>
@@ -170,9 +173,9 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
       {/* 總金額 Badge */}
       {totalCash !== undefined && (
         <div className="badge-total-cash" style={{ alignSelf: 'stretch', justifyContent: 'center' }}>
-          <span className="amount">總金額 : ${totalCash} NTD</span>
+          <span className="amount">{t('basicInfo.totalAmount')} : ${totalCash} NTD</span>
           <span className="subtext">
-            長程櫃: {longCount || 0} ｜ 短程櫃: {shortCount || 0}
+            {t('basicInfo.longVoyageCount')}: {longCount || 0} ｜ {t('basicInfo.shortVoyageCount')}: {shortCount || 0}
           </span>
         </div>
       )}

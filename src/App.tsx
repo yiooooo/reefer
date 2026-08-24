@@ -12,8 +12,10 @@ import { generateAutoTempRecords, calculateReeferDaysAndCash, formatTempNumber }
 import { printHandoverForm } from './utils/printHandover';
 import { findDuplicateLocations, DuplicateLocationModal } from './components/DuplicateLocationModal';
 import { CheckCircle2 } from 'lucide-react';
+import { LanguageProvider, useTranslation } from './i18n/LanguageContext';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { t } = useTranslation();
   const [formState, setFormState] = useState<ReeferFormState>(getInitialState);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -133,7 +135,7 @@ export const App: React.FC = () => {
       };
     });
 
-    showToast(`成功新增 ${count} 筆冷櫃`);
+    showToast(t('toasts.addedContainers', { count }));
   };
 
   const handleDeleteContainer = (id: string) => {
@@ -154,7 +156,7 @@ export const App: React.FC = () => {
         selectedContainerId: nextSelected,
       };
     });
-    showToast('已刪除選取冷櫃');
+    showToast(t('toasts.deletedContainer'));
   };
 
 
@@ -320,7 +322,7 @@ export const App: React.FC = () => {
       }),
     }));
 
-    showToast('已完成巡溫紀錄自動生成 (±0.5°C 且已依裝卸時間切割)！');
+    showToast(t('toasts.autoTempSuccessSingle'));
   };
 
   const handleAutoGenerateAllTemp = () => {
@@ -329,7 +331,7 @@ export const App: React.FC = () => {
     );
 
     if (targetContainers.length === 0) {
-      showToast('沒有符合條件的冷櫃（需同時填寫裝船與卸船日期時間）');
+      showToast(t('toasts.autoTempNoEligible'));
       return;
     }
 
@@ -368,7 +370,7 @@ export const App: React.FC = () => {
       }),
     }));
 
-    showToast(`已對 ${targetContainers.length} 筆冷櫃完成巡溫紀錄自動生成！`);
+    showToast(t('toasts.autoTempSuccessAll', { count: targetContainers.length }));
   };
 
 
@@ -497,9 +499,9 @@ export const App: React.FC = () => {
     });
 
     if (duplicateMode === 'update_existing' && updatedCount > 0) {
-      showToast(`已累計匯入：新增 ${addedCount} 筆，更新 ${updatedCount} 筆（現有總計 ${finalTotalCount} 筆）`);
+      showToast(t('toasts.importedSuccessAccumulated', { added: addedCount, updated: updatedCount, total: finalTotalCount }));
     } else {
-      showToast(`已累計匯入 ${addedCount} 筆冷櫃資料（現有總計 ${finalTotalCount} 筆）！`);
+      showToast(t('toasts.importedSuccess', { added: addedCount, total: finalTotalCount }));
     }
 
     // 匯入完成後自動檢查是否有重複裝載位置
@@ -521,14 +523,14 @@ export const App: React.FC = () => {
       console.error('Failed to clear localStorage:', err);
     }
     setFormState(getInitialState());
-    showToast('表單已重置為空值狀態');
+    showToast(t('toasts.resetSuccess'));
   };
 
   return (
     <div className="app-container">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-5 right-6 z-[2000] bg-white border border-sky-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-2.5 text-sm font-semibold text-sky-700 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed top-5 right-6 z-2000 bg-white border border-sky-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-2.5 text-sm font-semibold text-sky-700 animate-in fade-in slide-in-from-top-2 duration-200">
           <CheckCircle2 size={17} className="text-sky-600 shrink-0" />
           {toastMessage}
         </div>
@@ -567,7 +569,7 @@ export const App: React.FC = () => {
           onPrintPortInputChange={handlePrintPortInputChange}
           onPrint={() => {
             if (formState.containers.length === 0) {
-              showToast('尚無冷櫃資料，無法列印交接單');
+              showToast(t('toasts.printNoData'));
               return;
             }
             printHandoverForm(formState, formState.printType, formState.printPortInput);
@@ -654,6 +656,14 @@ export const App: React.FC = () => {
         duplicates={duplicateConflicts}
       />
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 };
 

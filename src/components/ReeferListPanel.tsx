@@ -5,6 +5,7 @@ import { DatetimePicker24h } from './DatetimePicker24h';
 import { formatTempNumber } from '../utils/tempGenerator';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useTranslation } from '../i18n/LanguageContext';
 
 type FilterMode = 'all' | 'discharged' | 'not_discharged';
 
@@ -50,6 +51,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   onShowTemp,
   showTempContainerId,
 }) => {
+  const { t } = useTranslation();
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
   const [selectedDischargePort, setSelectedDischargePort] = useState<string>('');
@@ -86,9 +88,9 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
   };
 
   const STATUS_DOT: Record<string, { color: string; title: string }> = {
-    discharged: { color: '#22c55e', title: '已卸櫃' },
-    onboard: { color: '#f59e0b', title: '已上船未卸櫃' },
-    waiting: { color: '#94a3b8', title: '未裝船' },
+    discharged: { color: '#22c55e', title: t('status.discharged') },
+    onboard: { color: '#f59e0b', title: t('status.onboard') },
+    waiting: { color: '#94a3b8', title: t('status.waiting') },
   };
 
   const isContainerDischarged = (c: ReeferContainer) =>
@@ -130,7 +132,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
     {
       key: 'all',
       icon: <Snowflake className="w-6 h-6" />,
-      label: '全部冷櫃',
+      label: t('stats.total'),
       count: containers.length,
       active: 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-200',
       inactive: 'bg-sky-50/80 border-sky-200 text-sky-900 hover:bg-sky-100 hover:border-sky-300',
@@ -140,7 +142,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
     {
       key: 'not_discharged',
       icon: <Package className="w-6 h-6" />,
-      label: '未卸櫃',
+      label: t('stats.onboard'),
       count: notDischargedCount,
       active: 'bg-amber-500 border-amber-400 text-white shadow-md shadow-amber-200',
       inactive: 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100 hover:border-amber-300',
@@ -150,7 +152,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
     {
       key: 'discharged',
       icon: <CheckCircle2 className="w-6 h-6" />,
-      label: '已卸櫃',
+      label: t('stats.discharged'),
       count: dischargedCount,
       active: 'bg-emerald-600 border-emerald-500 text-white shadow-md shadow-emerald-200',
       inactive: 'bg-emerald-50/80 border-emerald-200 text-emerald-900 hover:bg-emerald-100 hover:border-emerald-300',
@@ -253,7 +255,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
     <div className="panel-card">
       <div className="panel-header">
         <div className="panel-title">
-          <span className="icon-accent">❆</span> 冷櫃清單 (Reefer Information)
+          <span className="icon-accent">❆</span> {t('reeferList.panelTitle')}
         </div>
       </div>
 
@@ -261,7 +263,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
         {/* Crew Chips Bar */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-slate-500 whitespace-nowrap">巡櫃人員：</span>
+            <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t('reeferList.crewRoles')}</span>
             <div className="crew-chips-container" style={{ display: 'flex', gap: '6px' }}>
               {FIXED_CREW_ROLES.map((role) => (
                 <div
@@ -306,7 +308,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
               size="icon-sm"
               onClick={() => selectedContainerId && onDeleteContainer(selectedContainerId)}
               disabled={!selectedContainerId || containers.length === 0}
-              title="刪除所選櫃號"
+              title={t('reeferList.deleteSelectedTitle')}
               className={selectedContainerId ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-slate-300'}
             >
               <Trash2 size={15} />
@@ -317,7 +319,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             <Button
               size="icon-sm"
               onClick={() => onAddContainer(1)}
-              title="新增 1 筆冷櫃"
+              title={t('reeferList.addOneReeferTitle')}
               className="rounded-full"
             >
               <Plus size={15} />
@@ -330,17 +332,17 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                 type="button"
                 onClick={onOpenDuplicateModal}
                 className="h-7 px-2.5 font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-md hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
-                title="點擊查看裝載位置重複對照詳情"
+                title={t('reeferList.dupWarningTooltip')}
               >
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                位置重複 ({duplicateCount})
+                {t('reeferList.dupLocationAlert')} ({duplicateCount})
               </button>
             )}
 
             <Button
               variant="outline"
               size="icon-sm"
-              title="開啟港口與關鍵字篩選"
+              title={t('reeferList.filterSettingsTitle')}
               onClick={() => setShowFilterPanel((prev) => !prev)}
               className={[
                 'relative',
@@ -361,13 +363,13 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
         {(showFilterPanel || hasActiveFilters) && (
           <div className="bg-slate-50 border border-sky-200 rounded-lg px-3 py-2 flex flex-wrap items-center gap-2.5 text-xs">
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">卸船港:</span>
+              <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">{t('reeferList.pod')}</span>
               <select
                 className="h-7 px-1.5 text-xs border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 min-w-21.25"
                 value={selectedDischargePort}
                 onChange={(e) => setSelectedDischargePort(e.target.value)}
               >
-                <option value="">全部卸船港</option>
+                <option value="">{t('reeferList.allDischargePorts')}</option>
                 {dischargePortOptions.map((port) => (
                   <option key={port} value={port}>{port}</option>
                 ))}
@@ -375,13 +377,13 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">裝船港:</span>
+              <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">{t('reeferList.pol')}</span>
               <select
                 className="h-7 px-1.5 text-xs border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 min-w-[85px]"
                 value={selectedLoadingPort}
                 onChange={(e) => setSelectedLoadingPort(e.target.value)}
               >
-                <option value="">全部裝船港</option>
+                <option value="">{t('reeferList.allLoadingPorts')}</option>
                 {loadingPortOptions.map((port) => (
                   <option key={port} value={port}>{port}</option>
                 ))}
@@ -389,11 +391,11 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             </div>
 
             <div className="flex items-center gap-1 flex-1 min-w-30">
-              <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">搜尋:</span>
+              <span className="font-semibold text-sky-700 text-[11px] whitespace-nowrap">{t('reeferList.search')}</span>
               <Input
                 type="text"
                 className="h-7 text-xs py-0 px-2"
-                placeholder="搜尋櫃號、位置或品名..."
+                placeholder={t('reeferList.searchPlaceholder')}
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
               />
@@ -409,10 +411,10 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                   setSelectedLoadingPort('');
                   setSearchKeyword('');
                 }}
-                title="清除港口與搜尋條件"
+                title={t('reeferList.clearFilters')}
               >
                 <XCircle size={12} />
-                清除篩選
+                {t('reeferList.clearFilters')}
               </Button>
             )}
           </div>
@@ -424,16 +426,16 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
             <div className="icon-wrapper">
               <PackageSearch size={28} />
             </div>
-            <div className="title">目前尚無冷櫃資料</div>
-            <div className="desc">請點擊下方按鈕新增冷櫃，或直接匯入 Supercargo / MACS3 文字檔案</div>
+            <div className="title">{t('reeferList.emptyNoDataTitle')}</div>
+            <div className="desc">{t('reeferList.emptyNoDataDesc')}</div>
             <div className="flex gap-2.5 mt-2">
               <Button size="sm" onClick={() => onAddContainer(1)}>
                 <Plus size={14} />
-                新增第一筆冷櫃
+                {t('reeferList.addFirstReefer')}
               </Button>
               <Button variant="outline" size="sm" onClick={onOpenImport}>
                 <Upload size={14} />
-                匯入檔案
+                {t('reeferList.importFile')}
               </Button>
             </div>
           </div>
@@ -441,10 +443,10 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
           <div className="empty-placeholder" style={{ minHeight: '120px' }}>
             <div className="title" style={{ fontSize: '13px' }}>
               {hasActiveFilters
-                ? `查無符合條件的冷櫃 (${containers.length} 筆資料中無符合者)`
+                ? `${t('reeferList.emptySearchMatch')} (${containers.length})`
                 : filterMode === 'discharged'
-                  ? '目前無已卸櫃資料'
-                  : '目前無未卸櫃資料'}
+                  ? t('reeferList.emptyNoDischarged')
+                  : t('reeferList.emptyNoOnboard')}
             </div>
             {hasActiveFilters && (
               <Button
@@ -457,7 +459,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                   setSearchKeyword('');
                 }}
               >
-                清除篩選條件
+                {t('reeferList.clearFilters')}
               </Button>
             )}
           </div>
@@ -467,19 +469,19 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
               <thead>
                 <tr>
                   <th style={{ width: '18px', padding: '10px 4px 10px 8px' }}></th>
-                  <th style={{ width: '10px' }}>#</th>
-                  <th style={{ minWidth: '130px' }}>櫃號</th>
-                  <th style={{ minWidth: '80px' }}>裝載位置</th>
-                  <th style={{ width: '65px' }}>設定溫℃</th>
-                  <th style={{ minWidth: '100px' }}>貨物名稱</th>
-                  <th style={{ width: '65px' }}>通風開度%</th>
-                  <th style={{ width: '57px' }}>裝船港</th>
-                  <th style={{ minWidth: '140px' }}>裝船日期時間</th>
-                  <th style={{ width: '65px' }}>裝船溫℃</th>
-                  <th style={{ width: '57px' }}>卸船港</th>
-                  <th style={{ minWidth: '140px' }}>卸船日期時間</th>
-                  <th style={{ width: '65px' }}>卸船溫℃</th>
-                  <th style={{ width: '28px', textAlign: 'center' }} title="巡溫記錄">
+                  <th style={{ width: '10px' }}>{t('table.rowNumber')}</th>
+                  <th style={{ minWidth: '130px' }}>{t('table.containerNumber')}</th>
+                  <th style={{ minWidth: '80px' }}>{t('table.loadingLocation')}</th>
+                  <th style={{ width: '65px' }}>{t('table.settingTemp')}</th>
+                  <th style={{ minWidth: '100px' }}>{t('table.commodity')}</th>
+                  <th style={{ width: '65px' }}>{t('table.ventilation')}</th>
+                  <th style={{ width: '57px' }}>{t('table.loadingPort')}</th>
+                  <th style={{ minWidth: '140px' }}>{t('table.loadingDatetime')}</th>
+                  <th style={{ width: '65px' }}>{t('table.loadingTemp')}</th>
+                  <th style={{ width: '57px' }}>{t('table.dischargePort')}</th>
+                  <th style={{ minWidth: '140px' }}>{t('table.dischargeDatetime')}</th>
+                  <th style={{ width: '65px' }}>{t('table.dischargeTemp')}</th>
+                  <th style={{ width: '28px', textAlign: 'center' }} title={t('table.tempRecording')}>
                     <Thermometer size={13} color="#0ea5e9" />
                   </th>
                 </tr>
@@ -524,7 +526,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           value={cnt.containerNumber}
                           onChange={(e) => onUpdateContainer(cnt.id, 'containerNumber', e.target.value)}
                           onKeyDown={(e) => handleInputKeyDown(e, index, 0)}
-                          placeholder="請輸入櫃號"
+                          placeholder={t('table.containerNumberPlaceholder')}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -542,7 +544,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                           value={cnt.loadingLocation}
                           onChange={(e) => onUpdateContainer(cnt.id, 'loadingLocation', e.target.value)}
                           onKeyDown={(e) => handleInputKeyDown(e, index, 1)}
-                          placeholder="位置"
+                          placeholder={t('table.loadingLocationPlaceholder')}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectContainer(cnt.id);
@@ -698,7 +700,7 @@ export const ReeferListPanel: React.FC<ReeferListPanelProps> = ({
                       <td style={{ textAlign: 'center' }}>
                         <button
                           type="button"
-                          title="查看每日溫度記錄"
+                          title={t('table.tempRecording')}
                           className={[
                             'border-0 cursor-pointer rounded px-1 py-0.5 transition-colors',
                             cnt.id === showTempContainerId ? 'bg-sky-100' : 'bg-transparent hover:bg-slate-100',
