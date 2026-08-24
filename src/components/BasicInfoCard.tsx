@@ -4,6 +4,13 @@ import { ReeferContainer } from '../types/reefer';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 interface BasicInfoCardProps {
   vesselStatus: 'own vessel' | 'chartered vessel';
@@ -116,37 +123,41 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
         <div className="config-card-body">
           <div className="config-item">
             <FileCheck size={16} color="#0284c7" />
-            <select
-              className="h-8.5 px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
-              style={{ width: '130px' }}
+            <Select
               value={printType}
-              onChange={(e) => onPrintTypeChange(e.target.value as 'LOADPRINT' | 'DISCHARGEPRINT')}
+              onValueChange={(val) => onPrintTypeChange(val as 'LOADPRINT' | 'DISCHARGEPRINT')}
             >
-              <option value="LOADPRINT">Loading</option>
-              <option value="DISCHARGEPRINT">Discharge</option>
-            </select>
+              <SelectTrigger className="w-32.5">
+                <SelectValue placeholder="選擇類型" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="LOADPRINT">Loading</SelectItem>
+                <SelectItem value="DISCHARGEPRINT">Discharge</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="config-item">
             <Label className="whitespace-nowrap">交接港口：</Label>
-            <select
-              className="h-8.5 px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
-              style={{ width: '130px' }}
+            <Select
               value={printPortInput}
-              onChange={(e) => onPrintPortInputChange(e.target.value)}
+              onValueChange={onPrintPortInputChange}
+              disabled={availablePorts.length === 0}
             >
-              {availablePorts.length === 0 && (
-                <option value="">無港口資料</option>
-              )}
-              {availablePorts.map((port) => (
-                <option key={port} value={port}>
-                  {port}
-                </option>
-              ))}
-              {printPortInput && !availablePorts.includes(printPortInput.trim().toUpperCase()) && (
-                <option value={printPortInput}>{printPortInput}</option>
-              )}
-            </select>
+              <SelectTrigger className="w-32.5">
+                <SelectValue placeholder={availablePorts.length === 0 ? "無港口資料" : "請選擇港口"} />
+              </SelectTrigger>
+              <SelectContent>
+                {availablePorts.map((port) => (
+                  <SelectItem key={port} value={port}>
+                    {port}
+                  </SelectItem>
+                ))}
+                {printPortInput && !availablePorts.includes(printPortInput.trim().toUpperCase()) && (
+                  <SelectItem value={printPortInput}>{printPortInput}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button onClick={onPrint} title="列印船岸交接單">
