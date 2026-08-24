@@ -117,7 +117,7 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           <div className="config-item">
             <FileCheck size={16} color="#0284c7" />
             <select
-              className="h-[34px] px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
+              className="h-8.5 px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
               style={{ width: '130px' }}
               value={printType}
               onChange={(e) => onPrintTypeChange(e.target.value as 'LOADPRINT' | 'DISCHARGEPRINT')}
@@ -130,7 +130,7 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           <div className="config-item">
             <Label className="whitespace-nowrap">交接港口：</Label>
             <select
-              className="h-[34px] px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
+              className="h-8.5 px-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
               style={{ width: '130px' }}
               value={printPortInput}
               onChange={(e) => onPrintPortInputChange(e.target.value)}

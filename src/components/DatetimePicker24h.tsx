@@ -1,10 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { PickersActionBarAction } from '@mui/x-date-pickers/PickersActionBar';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import { cn } from '@/lib/utils';
 
 export interface DatetimePicker24hProps {
   value: string; // "YYYY-MM-DD HH:mm" 或 "YYYY-MM-DD" 或 ISO 字串
@@ -37,273 +33,225 @@ function inferYearFromBase(inputMonth: number, baseDateStr: string): number {
   return baseYear;
 }
 
+/**
+ * 智慧日期解析
+ * 支援以下輸入格式（month、day 為必填，year 自動推算）：
+ *
+ *  digits only:
+ *    "0822"          → YYYY-08-22 00:00
+ *    "082216"        → YYYY-08-22 16:00
+ *    "08221600"      → YYYY-08-22 16:00
+ *
+ *  digits with space (time):
+ *    "0822 1600"     → YYYY-08-22 16:00
+ *    "0822 16:00"    → YYYY-08-22 16:00
+ *
+ *  with separator (/ - .):
+ *    "8/22"          → YYYY-08-22 00:00
+ *    "8/22 16:00"    → YYYY-08-22 16:00
+ *    "08-22 16:00"   → YYYY-08-22 16:00
+ *
+ *  with year prefix (auto-extracted):
+ *    "2026-08-22 16:00"  → 2026-08-22 16:00
+ *    "2026-0822 1600"    → 2026-08-22 16:00
+ *    "2026-0822"         → 2026-08-22 00:00
+ */
+function parseSmartDate(raw: string, showTime: boolean, baseDate?: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  const getYear = (month: number): number => {
+    if (baseDate && baseDate.trim()) {
+      return inferYearFromBase(month, baseDate);
+    }
+    return dayjs().year();
+  };
+
+  let inputYear: number | null = null;
+  let rest = trimmed;
+
+  // 嘗試從開頭提取 4 位年份 (2000~2100)
+  const yearPrefixMatch = rest.match(/^(\d{4})[-/.\s]?(.*)/s);
+  if (yearPrefixMatch) {
+    const potentialYear = parseInt(yearPrefixMatch[1]);
+    if (potentialYear >= 2000 && potentialYear <= 2100) {
+      // 確認後面不只是 MMDD 等純數字導致誤判為年份+月日
+      // 若整體是 8 位純數字，前 4 位不一定是年份 (e.g. "08221600")
+      const isFullDigits8 = /^\d{8}$/.test(trimmed);
+      if (!isFullDigits8) {
+        inputYear = potentialYear;
+        rest = yearPrefixMatch[2].trim();
+      }
+    }
+  }
+
+  let month: number | null = null;
+  let day: number | null = null;
+  let hour = 0;
+  let minute = 0;
+
+  // Pattern A: 8 位純數字 MMDDHHmm
+  if (/^\d{8}$/.test(rest)) {
+    month = parseInt(rest.slice(0, 2));
+    day   = parseInt(rest.slice(2, 4));
+    hour  = parseInt(rest.slice(4, 6));
+    minute = parseInt(rest.slice(6, 8));
+  }
+  // Pattern B: 6 位純數字 MMDDHh
+  else if (/^\d{6}$/.test(rest)) {
+    month = parseInt(rest.slice(0, 2));
+    day   = parseInt(rest.slice(2, 4));
+    hour  = parseInt(rest.slice(4, 6));
+  }
+  // Pattern C: 4 位純數字 MMDD
+  else if (/^\d{4}$/.test(rest)) {
+    month = parseInt(rest.slice(0, 2));
+    day   = parseInt(rest.slice(2, 4));
+  }
+  // Pattern D: MMDD HHmm (8 digits, space-separated 4+4)
+  else if (/^\d{4}\s+\d{4}$/.test(rest)) {
+    const parts = rest.split(/\s+/);
+    month  = parseInt(parts[0].slice(0, 2));
+    day    = parseInt(parts[0].slice(2, 4));
+    hour   = parseInt(parts[1].slice(0, 2));
+    minute = parseInt(parts[1].slice(2, 4));
+  }
+  // Pattern E: MMDD HH:mm
+  else if (/^\d{4}\s+\d{1,2}:\d{2}$/.test(rest)) {
+    const [datePart, timePart] = rest.split(/\s+/);
+    month = parseInt(datePart.slice(0, 2));
+    day   = parseInt(datePart.slice(2, 4));
+    const [h, m] = timePart.split(':');
+    hour = parseInt(h); minute = parseInt(m);
+  }
+  // Pattern F: M/D, M-D, M.D (with optional space+time)
+  else {
+    const sepMatch = rest.match(/^(\d{1,2})[/\-.](\d{1,2})(?:\s+(\d{1,2})(?::(\d{2}))?)?$/);
+    if (sepMatch) {
+      month  = parseInt(sepMatch[1]);
+      day    = parseInt(sepMatch[2]);
+      if (sepMatch[3] !== undefined) hour   = parseInt(sepMatch[3]);
+      if (sepMatch[4] !== undefined) minute = parseInt(sepMatch[4]);
+    }
+  }
+
+  if (month === null || day === null) return '';
+  if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
+
+  const year = inputYear ?? getYear(month);
+
+  const dt = dayjs(
+    `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`
+  );
+  if (!dt.isValid()) return '';
+  return showTime ? dt.format('YYYY-MM-DD HH:mm') : dt.format('YYYY-MM-DD');
+}
+
 export const DatetimePicker24h: React.FC<DatetimePicker24hProps> = ({
   value,
   onChange,
   showTime = true,
   baseDate,
   placeholder,
+  className,
   style,
   width,
   dataRow,
   dataCol,
   onKeyDown,
 }) => {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // 快取 dayjs 物件 reference，避免每次 re-render 產生新物件實體
-  const dayjsValue = useMemo<Dayjs | null>(() => {
-    if (!value || !value.trim()) return null;
-    const clean = value.trim().replace(/\//g, '-').replace('T', ' ');
-    const d = dayjs(clean);
-    return d.isValid() ? d : null;
-  }, [value]);
+  const defaultWidth = width || (showTime ? '155px' : '118px');
+  const defaultPlaceholder = placeholder || (showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD');
 
-  // 內部「編輯中」暫存值：當空欄位被 focus 時，預填當年 1/1 00:00
-  // 讓 MUI 顯示 "2026-01-01 00:00"，用戶可直接從月份開始改寫
-  // 離開欄位未完成輸入時清除
-  const [editingValue, setEditingValue] = useState<Dayjs | null>(null);
-
-  // MUI 實際使用的值：外部值 > 內部暫存值 > null
-  const effectiveValue = dayjsValue ?? editingValue;
-
-  const dateFormat = showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD';
-  const defaultPlaceholder = placeholder || dateFormat;
-  const defaultWidth = width || (showTime ? '155px' : '120px');
-
-  // 推算本次應使用的年份 (for referenceDate 與 auto-fill)
-  // 若有 baseDate，以 baseDate 月份做跨年推算；否則用當年年份
+  // 推算本次應使用的年份 (顯示於 focus 預填)
   const inferredYear = useMemo(() => {
     if (baseDate && baseDate.trim()) {
       const base = dayjs(baseDate);
-      if (base.isValid()) {
-        return inferYearFromBase(base.month() + 1, baseDate);
-      }
+      if (base.isValid()) return base.year();
     }
     return dayjs().year();
   }, [baseDate]);
 
-  // referenceDate: 空欄位時 MUI 使用此日期補全缺漏的欄位 (尤其是年份)
-  const referenceDate = useMemo(
-    () => dayjs().year(inferredYear).month(0).date(1).hour(0).minute(0).second(0),
-    [inferredYear]
-  );
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+    const currentVal = value ? value.trim() : '';
+    if (currentVal) {
+      // 有現有值：全選方便重新輸入
+      setEditValue(currentVal);
+      setTimeout(() => e.target.select(), 0);
+    } else {
+      // 空值：預填年份前綴，提示使用者從月日開始輸入
+      const yearPrefix = `${inferredYear}-`;
+      setEditValue(yearPrefix);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(yearPrefix.length, yearPrefix.length);
+        }
+      }, 0);
+    }
+  };
 
-  const handleChange = (newValue: Dayjs | null) => {
-    if (!newValue || !newValue.isValid()) {
-      setEditingValue(null);
+  const handleBlur = () => {
+    setIsFocused(false);
+    // 若只剩下年份前綴 (e.g. "2026-") 沒有繼續輸入，視為空值
+    const yearOnlyRegex = /^\d{4}-?$/;
+    if (yearOnlyRegex.test(editValue.trim())) {
       onChange('');
     } else {
-      setEditingValue(null); // 清除暫存，改用外部值
-      onChange(newValue.format(dateFormat));
+      const parsed = parseSmartDate(editValue, showTime, baseDate);
+      onChange(parsed);
     }
+    setEditValue('');
   };
 
-  /**
-   * 當外層 div 接收到 focus (從外部進入)：
-   * 若欄位值為空，預填「當年 1/1 00:00」讓年份顯示出來，再跳到月份 section
-   */
-  const handleContainerFocus = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (dayjsValue) return; // 已有值，不干涉
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditValue(e.target.value);
+  };
 
-    // 若 focus 從容器內部移來 (MUI section 間跳轉)，不干涉
-    const relatedTarget = e.relatedTarget as Node | null;
-    const container = containerRef.current;
-    if (container && relatedTarget && container.contains(relatedTarget)) {
-      return;
+  // onKeyDown forwarding: 外層 div 的 onKeyDownCapture 讓 Tab/Arrow 導航正常運作
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Enter 鍵：觸發 blur 解析
+    if (e.key === 'Enter' && isFocused) {
+      inputRef.current?.blur();
     }
-
-    // 預填當年 1/1 00:00 讓年份顯示，並跳到月份 section
-    const defaultDate = dayjs().year(inferredYear).month(0).date(1).hour(0).minute(0).second(0);
-    setEditingValue(defaultDate);
-
-    setTimeout(() => {
-      if (!containerRef.current) return;
-      const monthSection = containerRef.current.querySelector<HTMLElement>('[data-sectionindex="1"]');
-      monthSection?.click();
-    }, 0);
+    onKeyDown?.(e);
   };
 
-  /**
-   * 當 focus 離開容器且外部值仍為空時，清除暫存的 editingValue
-   */
-  const handleContainerBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (dayjsValue) return; // 外部有值，不用清
-    const relatedTarget = e.relatedTarget as Node | null;
-    const container = containerRef.current;
-    if (!container?.contains(relatedTarget ?? null)) {
-      setEditingValue(null); // 離開欄位且未完成輸入，清除暫存
-    }
-  };
-
-  const actionBarActions: PickersActionBarAction[] = ['today', 'clear'];
-
-  const commonSlotProps = {
-    textField: {
-      size: 'small' as const,
-      variant: 'outlined' as const,
-      inputProps: {
-        placeholder: defaultPlaceholder,
-        'data-row': dataRow,
-        'data-col': dataCol,
-      },
-      sx: {
-        width: defaultWidth,
-        minWidth: defaultWidth,
-        height: '28px !important',
-        minHeight: '28px !important',
-        maxHeight: '28px !important',
-        display: 'inline-block',
-        verticalAlign: 'middle',
-        margin: '0 !important',
-        boxSizing: 'border-box !important',
-
-        // 1. MuiPickersInputBase 容器 (div) 高度固定 28px、flex 垂直置中
-        '& .MuiPickersInputBase-root, & .MuiInputBase-root': {
-          height: '28px !important',
-          minHeight: '28px !important',
-          maxHeight: '28px !important',
-          fontSize: '12px !important',
-          backgroundColor: '#ffffff !important',
-          borderRadius: '6px !important',
-          paddingLeft: '6px !important',
-          paddingRight: '2px !important',
-          boxSizing: 'border-box !important',
-          display: 'flex !important',
-          alignItems: 'center !important',
-          position: 'relative !important',
-          cursor: 'pointer !important',
-        },
-
-        // 2. MUI X v7 內部 section list 元素全盤覆寫為 12px 與垂直置中
-        '& .MuiPickersSectionList-root, & .MuiPickersSectionList-section, & .MuiPickersSectionList-sectionContent, & .MuiPickersSection-root, & .MuiPickersInputBase-input, & .MuiInputBase-input': {
-          display: 'inline-flex !important',
-          alignItems: 'center !important',
-          fontSize: '12px !important',
-          height: '26px !important',
-          lineHeight: '26px !important',
-          padding: '0 !important',
-          margin: '0 !important',
-          boxSizing: 'border-box !important',
-          color: '#0f172a !important',
-          letterSpacing: '-0.2px !important',
-          fontFamily: 'inherit !important',
-          cursor: 'pointer !important',
-        },
-        // 3. 邊框 notchedOutline：固定高度 28px
-        '& .MuiPickersOutlinedInput-notchedOutline, & .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#cbd5e1 !important',
-          borderStyle: 'solid !important',
-          borderWidth: '1px !important',
-          borderRadius: '6px !important',
-          position: 'absolute !important',
-          top: '0 !important',
-          bottom: '0 !important',
-          left: '0 !important',
-          right: '0 !important',
-          height: '28px !important',
-          boxSizing: 'border-box !important',
-          transition: 'border-color 0.15s ease, box-shadow 0.15s ease !important',
-          '& legend': {
-            display: 'none !important',
-            width: '0 !important',
-          },
-        },
-
-        // 4. Hover 邊框顏色改為主題藍 #0284c7
-        '&:hover .MuiPickersOutlinedInput-notchedOutline, & .MuiPickersInputBase-root:hover .MuiPickersOutlinedInput-notchedOutline, &:hover .MuiOutlinedInput-notchedOutline, & .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#0284c7 !important',
-          borderWidth: '1px !important',
-        },
-
-        // 5. Focus 藍光
-        '&.Mui-focused .MuiPickersOutlinedInput-notchedOutline, & .MuiPickersInputBase-root.Mui-focused .MuiPickersOutlinedInput-notchedOutline, &.Mui-focused .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#0284c7 !important',
-          borderWidth: '1px !important',
-          boxShadow: '0 0 0 3px rgba(56, 189, 248, 0.2) !important',
-        },
-
-        '& .MuiInputAdornment-root': {
-          marginLeft: '0 !important',
-          height: '28px !important',
-          display: 'flex !important',
-          alignItems: 'center !important',
-        },
-
-        '& .MuiIconButton-root': {
-          padding: '2px !important',
-          marginRight: '-1px !important',
-          color: '#0284c7 !important',
-          '&:hover': {
-            backgroundColor: 'rgba(2, 132, 199, 0.08) !important',
-          },
-          '& svg': {
-            fontSize: '16px !important',
-            width: '16px !important',
-            height: '16px !important',
-          },
-        },
-        ...style,
-      },
-    },
-    popper: {
-      sx: {
-        '& .MuiPaper-root': {
-          borderRadius: '10px',
-          boxShadow: '0 10px 25px rgba(15, 23, 42, 0.18)',
-          border: '1px solid #bae6fd',
-        },
-      },
-    },
-    // 底部動作列：今天、清除按鈕
-    actionBar: {
-      actions: actionBarActions,
-    },
-  };
+  const displayValue = isFocused ? editValue : (value ?? '');
 
   return (
     <div
-      ref={containerRef}
       data-row={dataRow}
       data-col={dataCol}
-      onFocus={handleContainerFocus}
-      onBlur={handleContainerBlur}
-      onKeyDownCapture={onKeyDown}
-      style={{ display: 'inline-block', verticalAlign: 'middle', width: defaultWidth }}
+      onKeyDownCapture={handleKeyDown}
+      style={{ display: 'inline-block', verticalAlign: 'middle', width: defaultWidth, ...style }}
     >
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        {showTime ? (
-          <DateTimePicker
-            open={open}
-            onOpen={() => setOpen(true)}
-            onClose={() => setOpen(false)}
-            closeOnSelect={true}
-            value={effectiveValue}
-            referenceDate={referenceDate}
-            onChange={handleChange}
-            ampm={false} // 24 小時制
-            timeSteps={{ hours: 1, minutes: 1 }} // 包含 0~59 分鐘
-            views={['year', 'month', 'day', 'hours', 'minutes']}
-            format={dateFormat}
-            slotProps={commonSlotProps}
-          />
-        ) : (
-          <DatePicker
-            open={open}
-            onOpen={() => setOpen(true)}
-            onClose={() => setOpen(false)}
-            closeOnSelect={true}
-            value={effectiveValue}
-            referenceDate={referenceDate}
-            onChange={handleChange}
-            views={['year', 'month', 'day']}
-            format={dateFormat}
-            slotProps={commonSlotProps}
-          />
+      <input
+        ref={inputRef}
+        type="text"
+        value={displayValue}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        placeholder={defaultPlaceholder}
+        style={{ width: '100%' }}
+        className={cn(
+          // 與 Input 元件一致的樣式（h-8 / text-sm，符合目前 Input 設定）
+          "border-input bg-background ring-offset-background placeholder:text-muted-foreground",
+          "focus-visible:border-ring focus-visible:ring-ring/50",
+          "flex h-8 w-full min-w-0 rounded-md border px-2 py-1 text-sm",
+          "shadow-xs transition-[color,box-shadow] outline-none",
+          "focus:ring-2 focus:ring-ring/30 focus:border-ring",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          "font-mono tabular-nums",
+          className
         )}
-      </LocalizationProvider>
+      />
     </div>
   );
 };
-
