@@ -1,6 +1,14 @@
 import React from 'react';
-import { X, Download, FileCheck2 } from 'lucide-react';
+import { Download, FileCheck2 } from 'lucide-react';
 import { ReeferFormState } from '../types/reefer';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from './ui/dialog';
+import { Button } from './ui/button';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -32,7 +40,6 @@ export const buildExportXml = (formState: ReeferFormState): string => {
 
   const group1Xml = formState.containers
     .map((cnt) => {
-      // 巡溫紀錄 DATE_LOG 亦轉為 ISO 8601 格式 (如 2026-08-14T05:46:11.258Z)
       const group2Xml = (cnt.tempRecords || [])
         .map(
           (tr) => `<GROUP2><DF_1>${tr.df1 ?? ''}</DF_1><DF_2>${tr.df2 ?? ''}</DF_2><DF_3>${tr.df3 ?? ''}</DF_3><DATE_LOG>${formatIsoDatetime(tr.dateLog, '')}</DATE_LOG><REMARK>${tr.remark ?? ''}</REMARK></GROUP2>`
@@ -49,7 +56,6 @@ export const buildExportXml = (formState: ReeferFormState): string => {
               { id: '4', role: '3E' },
             ];
 
-      // 關鍵修正：職稱代碼除去斜線 (C/O -> CO, 2/O -> 2O, 3/O -> 3O, 3/E -> 3E)
       const group3Xml = crewList
         .map((cr) => {
           const roleStr = (cr.role || '').replace(/\//g, '');
@@ -57,7 +63,6 @@ export const buildExportXml = (formState: ReeferFormState): string => {
         })
         .join('');
 
-      // 自動轉換裝卸船時間為標準 ISO 8601 格式 (如 2026-08-16T16:00:00.000Z)，若無時間則輸出 'null'
       const loadingDt = formatIsoDatetime(cnt.loadingDatetime, 'null');
       const dischargeDt = formatIsoDatetime(cnt.dischargeDatetime, 'null');
 
@@ -65,7 +70,6 @@ export const buildExportXml = (formState: ReeferFormState): string => {
     })
     .join('');
 
-  // 公司標準外殼：<form> ... </form> 格式
   return `<?xml version="1.0" encoding="UTF-8"?><form><CATEGORY>${formState.category || 'WEB_FFS'}</CATEGORY><FORM_TYPE>${formState.formType || 'reefer_bonus'}</FORM_TYPE><IMO>${formState.imo || '9319131'}</IMO><SHIP_NAME>${vesselName}</SHIP_NAME><VESSEL_STATUS>${formState.vesselStatus || 'own vessel'}</VESSEL_STATUS><VOYAGE>${formState.voyage || ''}</VOYAGE><COUNT>${totalContainers}</COUNT><TOTALCASH>${totalCash}</TOTALCASH><COUNT_LONG>${countLong}</COUNT_LONG><COUNT_SHORT>${countShort}</COUNT_SHORT><PRINT_PORT>${formState.printPortInput || ''}</PRINT_PORT><QUERY_TYPE>${formState.queryType || 'DISCHARGE'}</QUERY_TYPE><PRINT_TYPE>${formState.printType || 'LOADPRINT'}</PRINT_TYPE><IMPORT_TYPE>${formState.importType || 'SUPERCARGO'}</IMPORT_TYPE>${group1Xml}</form>`;
 };
 
@@ -74,12 +78,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   formState,
 }) => {
-  if (!isOpen) return null;
-
   const xmlContent = buildExportXml(formState);
 
   const handleDownload = () => {
-    // 帶入 UTF-8 BOM (\uFEFF)，確保公司系統讀取中文船名 (如 雲明) 絕對不亂碼
     const blob = new Blob(['\uFEFF' + xmlContent], { type: 'application/xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -97,58 +98,36 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: '400px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Download size={18} color="#0284c7" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Download size={16} className="text-sky-600" />
             匯出 XML 報表
-          </span>
-          <button
-            type="button"
-            style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="modal-body" style={{ padding: '24px 16px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background: '#f0f9ff',
-              color: '#0284c7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '12px',
-              flexShrink: 0,
-            }}
-          >
+        <div className="px-6 py-6 flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
             <FileCheck2 size={28} />
           </div>
-          <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: 700, marginBottom: '6px' }}>
-            匯出 XML 檔案
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
+          <div className="text-sm font-bold text-slate-800">匯出 XML 檔案</div>
+          <div className="text-xs text-slate-500 leading-relaxed">
             冷櫃資料已準備完畢（共 {formState.containers.length} 筆資料）。<br />
             點擊下方按鈕即可下載 `.xml` 檔案。
           </div>
         </div>
 
-        <div className="modal-footer" style={{ justifyContent: 'center', gap: '10px' }}>
-          <button className="btn" onClick={onClose}>
+        <DialogFooter className="justify-center gap-2.5">
+          <Button variant="outline" size="sm" onClick={onClose}>
             取消
-          </button>
-          <button className="btn btn-primary" onClick={handleDownload} style={{ minWidth: '130px' }}>
+          </Button>
+          <Button size="sm" onClick={handleDownload} className="min-w-[130px]">
             <Download size={14} />
             下載 XML 檔案
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

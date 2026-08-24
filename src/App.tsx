@@ -528,26 +528,8 @@ export const App: React.FC = () => {
     <div className="app-container">
       {/* Toast Notification */}
       {toastMessage && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '20px',
-            right: '24px',
-            background: '#ffffff',
-            border: '1px solid #38bdf8',
-            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
-            borderRadius: '10px',
-            padding: '12px 18px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            zIndex: 2000,
-            fontSize: '13px',
-            fontWeight: 600,
-            color: '#0284c7',
-          }}
-        >
-          <CheckCircle2 size={18} color="#0284c7" />
+        <div className="fixed top-5 right-6 z-[2000] bg-white border border-sky-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-2.5 text-sm font-semibold text-sky-700 animate-in fade-in slide-in-from-top-2 duration-200">
+          <CheckCircle2 size={17} className="text-sky-600 shrink-0" />
           {toastMessage}
         </div>
       )}

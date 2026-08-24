@@ -1,6 +1,16 @@
 import React, { useMemo, useEffect } from 'react';
 import { Printer, Ship, FileCheck } from 'lucide-react';
 import { ReeferContainer } from '../types/reefer';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 interface BasicInfoCardProps {
   vesselStatus: 'own vessel' | 'chartered vessel';
@@ -95,10 +105,9 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
           </div>
 
           <div className="config-item">
-            <span className="form-label">航次 (Voyage)：</span>
-            <input
+            <Label className="whitespace-nowrap">航次 (Voyage)：</Label>
+            <Input
               type="text"
-              className="input-control"
               style={{ width: '150px' }}
               value={voyage}
               onChange={(e) => onVoyageChange(e.target.value)}
@@ -114,47 +123,51 @@ export const BasicInfoCard: React.FC<BasicInfoCardProps> = ({
         <div className="config-card-body">
           <div className="config-item">
             <FileCheck size={16} color="#0284c7" />
-            <select
-              className="input-control"
-              style={{ width: '130px' }}
+            <Select
               value={printType}
-              onChange={(e) => onPrintTypeChange(e.target.value as 'LOADPRINT' | 'DISCHARGEPRINT')}
+              onValueChange={(val) => onPrintTypeChange(val as 'LOADPRINT' | 'DISCHARGEPRINT')}
             >
-              <option value="LOADPRINT">Loading</option>
-              <option value="DISCHARGEPRINT">Discharge</option>
-            </select>
+              <SelectTrigger className="w-32.5">
+                <SelectValue placeholder="選擇類型" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="LOADPRINT">Loading</SelectItem>
+                <SelectItem value="DISCHARGEPRINT">Discharge</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="config-item">
-            <span className="form-label">交接港口：</span>
-            <select
-              className="input-control"
-              style={{ width: '130px' }}
+            <Label className="whitespace-nowrap">交接港口：</Label>
+            <Select
               value={printPortInput}
-              onChange={(e) => onPrintPortInputChange(e.target.value)}
+              onValueChange={onPrintPortInputChange}
+              disabled={availablePorts.length === 0}
             >
-              {availablePorts.length === 0 && (
-                <option value="">無港口資料</option>
-              )}
-              {availablePorts.map((port) => (
-                <option key={port} value={port}>
-                  {port}
-                </option>
-              ))}
-              {printPortInput && !availablePorts.includes(printPortInput.trim().toUpperCase()) && (
-                <option value={printPortInput}>{printPortInput}</option>
-              )}
-            </select>
+              <SelectTrigger className="w-32.5">
+                <SelectValue placeholder={availablePorts.length === 0 ? "無港口資料" : "請選擇港口"} />
+              </SelectTrigger>
+              <SelectContent>
+                {availablePorts.map((port) => (
+                  <SelectItem key={port} value={port}>
+                    {port}
+                  </SelectItem>
+                ))}
+                {printPortInput && !availablePorts.includes(printPortInput.trim().toUpperCase()) && (
+                  <SelectItem value={printPortInput}>{printPortInput}</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
-          <button className="btn btn-primary" onClick={onPrint} title="列印船岸交接單">
-            <Printer size={15} />
+          <Button onClick={onPrint} title="列印船岸交接單">
+            <Printer size={14} />
             列印交接單
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* 總金額 Badge Card (位置改移至船岸交接單右側) */}
+      {/* 總金額 Badge */}
       {totalCash !== undefined && (
         <div className="badge-total-cash" style={{ alignSelf: 'stretch', justifyContent: 'center' }}>
           <span className="amount">總金額 : ${totalCash} NTD</span>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { RotateCcw, Upload, Download, Ship } from 'lucide-react';
 import { VESSEL_LIST } from '../data/vessels';
+import { Button } from './ui/button';
 
 interface HeaderProps {
   vesselName: string;
@@ -59,18 +60,20 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-actions">
-        <button className="hdr-btn hdr-btn-ghost" onClick={onReset}>
-          <RotateCcw size={15} />
+        <Button variant="ghost" size="sm" onClick={onReset}
+          className="text-slate-200 hover:text-white hover:bg-white/15 border border-white/15 hover:border-white/30 h-8">
+          <RotateCcw size={14} />
           重置 (Reset)
-        </button>
-        <button className="hdr-btn hdr-btn-outline" onClick={onOpenImport}>
-          <Upload size={15} />
+        </Button>
+        <Button variant="outline" size="sm" onClick={onOpenImport}
+          className="border-sky-400/60 text-sky-400 bg-transparent hover:bg-sky-400/15 hover:text-sky-300 hover:border-sky-400 h-8">
+          <Upload size={14} />
           匯入 (Import)
-        </button>
-        <button className="hdr-btn hdr-btn-primary" onClick={onOpenExport}>
-          <Download size={15} />
+        </Button>
+        <Button size="sm" onClick={onOpenExport} className="h-8">
+          <Download size={14} />
           匯出 XML (Export)
-        </button>
+        </Button>
       </div>
     </header>
   );

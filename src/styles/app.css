@@ -1,10 +1,16 @@
+/* ========================================================================
+   app.css — 只保留 Shadcn 元件無法覆蓋的 Layout / Table / 特殊樣式
+   Shadcn 已覆蓋：Button, Input, Textarea, Label, Badge, Dialog
+   ======================================================================== */
+
+/* ─── App Layout ─── */
 .app-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-/* Header Navbar - Modern Dark Metallic */
+/* Header Navbar */
 .app-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   height: 60px;
@@ -36,65 +42,13 @@
   text-transform: uppercase;
 }
 
-
-
 .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Header Action Buttons */
-.hdr-btn {
-  height: 34px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.hdr-btn-primary {
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
-}
-
-.hdr-btn-primary:hover {
-  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.6);
-  transform: translateY(-1px);
-}
-
-.hdr-btn-ghost {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #f1f5f9;
-}
-
-.hdr-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-
-.hdr-btn-outline {
-  background: transparent;
-  border-color: #38bdf8;
-  color: #38bdf8;
-}
-
-.hdr-btn-outline:hover {
-  background: rgba(56, 189, 248, 0.15);
-  transform: translateY(-1px);
-}
-
-/* Workspace Main Layout */
+/* ─── Workspace Layout ─── */
 .workspace-content {
   padding: 20px 24px;
   display: flex;
@@ -156,7 +110,7 @@
   border-radius: 4px;
 }
 
-/* Segmented Toggle Control */
+/* ─── Segmented Toggle Control ─── */
 .segmented-control {
   display: flex;
   background: #f1f5f9;
@@ -183,7 +137,7 @@
   box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
 }
 
-/* File Selector Button styling for Tailwind / Browser resets */
+/* File Selector Button */
 input[type="file"]::file-selector-button,
 input[type="file"]::-webkit-file-upload-button {
   margin-right: 12px;
@@ -204,7 +158,6 @@ input[type="file"]::-webkit-file-upload-button:hover {
   background-color: #0369a1;
 }
 
-
 /* ─── Main Layout ─── */
 .main-layout {
   display: flex;
@@ -214,7 +167,6 @@ input[type="file"]::-webkit-file-upload-button:hover {
   min-width: 0;
 }
 
-/* The combined card (list & details unified) */
 .combined-wrapper {
   flex: 1;
   min-width: 0;
@@ -225,10 +177,9 @@ input[type="file"]::-webkit-file-upload-button:hover {
   display: flex;
   flex-direction: column;
   min-height: 560px;
-  overflow: visible;       /* allow table to overflow and scroll */
+  overflow: visible;
 }
 
-/* List sub-column inside combined wrapper */
 .list-section {
   flex: 1;
   width: 100%;
@@ -238,7 +189,6 @@ input[type="file"]::-webkit-file-upload-button:hover {
   overflow: visible;
 }
 
-/* Strip the inner panel-card styling in list-section so it blends */
 .list-section .panel-card {
   border: none !important;
   box-shadow: none !important;
@@ -248,38 +198,12 @@ input[type="file"]::-webkit-file-upload-button:hover {
   flex: 1;
 }
 
-/* Temperature panel — right column, fixed width */
 .temp-section {
   width: 480px;
   flex-shrink: 0;
 }
 
-/* ─── RWD breakpoints ─── */
-@media (max-width: 1400px) {
-  .temp-section {
-    width: 400px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .main-layout {
-    flex-direction: column;
-  }
-  .combined-wrapper {
-    flex-direction: column;
-    min-height: unset;
-  }
-  .list-section {
-    width: 100%;
-    min-width: unset;
-  }
-  .temp-section {
-    width: 100%;
-  }
-}
-
-
-/* Panel Card */
+/* ─── Panel Card ─── */
 .panel-card {
   background: #ffffff;
   border-radius: var(--radius-lg);
@@ -322,7 +246,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
   flex: 1;
 }
 
-/* Summary Badges */
+/* ─── Total Cash Badge (特殊設計，非 Shadcn Badge) ─── */
 .badge-total-cash {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #ffffff;
@@ -345,97 +269,11 @@ input[type="file"]::-webkit-file-upload-button:hover {
   opacity: 0.9;
 }
 
-.badge-pill-cyan {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.badge-pill-indigo {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #c7d2fe;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* Form Controls */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-}
-
-.form-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.input-control {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  height: 34px;
-  padding: 6px 12px;
-  font-size: 13px;
-  border: 1px solid #cbd5e1;
-  border-radius: var(--radius-sm);
-  background: #ffffff;
-  color: #0f172a;
-  transition: all 0.15s ease;
-}
-
-.input-control:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
-  outline: none;
-}
-
-.input-control.readonly {
-  background: #f8fafc;
-  color: #64748b;
-  border-color: #e2e8f0;
-}
-
-/* Standard Buttons (Tailwind Component Layer) */
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-1.5 h-8 px-3.5 text-xs font-semibold rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900 cursor-pointer transition-colors;
-  }
-
-  .btn-primary {
-    @apply bg-sky-600 border-sky-600 text-white hover:bg-sky-700 hover:border-sky-700 hover:text-white;
-  }
-
-  .btn-circle {
-    @apply w-7 h-7 p-0 rounded-full;
-  }
-
-  .btn-icon-only {
-    @apply w-8 h-8 p-0;
-  }
-}
-
-/* Data Table */
+/* ─── Data Table ─── */
 .data-table-wrapper {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: auto;        /* both x and y scroll */
+  overflow: auto;
   box-shadow: var(--shadow-sm);
   max-width: 100%;
 }
@@ -470,16 +308,52 @@ input[type="file"]::-webkit-file-upload-button:hover {
   border-bottom: none;
 }
 
-.data-table tr.selected {
-  background: #f0f9ff;
-  border-left: 3px solid #0284c7;
-}
-
 .data-table tr:hover {
   background: #f8fafc;
 }
 
-/* Crew Chips */
+.data-table tr.selected {
+  background: #e0f2fe;
+  border-left: 3px solid #0284c7;
+}
+
+/* 🟢 已卸櫃 */
+.data-table tr.status-discharged:hover {
+  background: #f0fdf4;
+}
+.data-table tr.status-discharged.selected {
+  background: #dcfce7;
+  border-left: 3px solid #16a34a;
+}
+.data-table tr.status-discharged.selected:hover {
+  background: #bbf7d0;
+}
+
+/* 🟡 未卸櫃 */
+.data-table tr.status-onboard:hover {
+  background: #fffbeb;
+}
+.data-table tr.status-onboard.selected {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+}
+.data-table tr.status-onboard.selected:hover {
+  background: #fde68a;
+}
+
+/* ⚪ 未裝船 */
+.data-table tr.status-waiting:hover {
+  background: #f8fafc;
+}
+.data-table tr.status-waiting.selected {
+  background: #f1f5f9;
+  border-left: 3px solid #94a3b8;
+}
+.data-table tr.status-waiting.selected:hover {
+  background: #e2e8f0;
+}
+
+/* ─── Crew Chips ─── */
 .crew-chips-container {
   display: flex;
   align-items: center;
@@ -507,26 +381,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
   outline: none;
 }
 
-.crew-chip .btn-remove {
-  background: #fca5a5;
-  color: #991b1b;
-  border: none;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 10px;
-}
-
-.crew-chip .btn-remove:hover {
-  background: #ef4444;
-  color: #ffffff;
-}
-
-/* Empty State Placeholders */
+/* ─── Empty State ─── */
 .empty-placeholder {
   display: flex;
   flex-direction: column;
@@ -561,92 +416,37 @@ input[type="file"]::-webkit-file-upload-button:hover {
   max-width: 240px;
 }
 
-/* Modal Overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.modal-card {
-  background: #ffffff;
-  border-radius: var(--radius-lg);
-  width: 90%;
-  max-width: 600px;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: modalScale 0.2s ease;
-}
-
-@keyframes modalScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.modal-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 700;
-  font-size: 15px;
-  color: #0f172a;
-}
-
-.modal-body {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.modal-footer {
-  padding: 14px 24px;
-  border-top: 1px solid #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  background: #f8fafc;
-}
-
-.textarea-control {
-  width: 100%;
-  min-height: 140px;
-  padding: 10px 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+/* ─── Inline input style for table cells ─── */
+/* Used where Shadcn <Input> needs table-cell specific overrides */
+.table-input {
+  height: 28px;
   font-size: 12px;
+  padding: 2px 6px;
   border: 1px solid #cbd5e1;
   border-radius: var(--radius-sm);
-  outline: none;
+  background: #ffffff;
   color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
 }
 
-.textarea-control:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+.table-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
 }
 
-/* ==========================================================================
-   RWD Responsive Media Queries (行動裝置手持視覺適應性)
-   ========================================================================== */
+/* ─── RWD ─── */
+@media (max-width: 1400px) {
+  .temp-section { width: 400px; }
+}
+
+@media (max-width: 1200px) {
+  .main-layout { flex-direction: column; }
+  .combined-wrapper { flex-direction: column; min-height: unset; }
+  .list-section { width: 100%; min-width: unset; }
+  .temp-section { width: 100%; }
+}
+
 @media (max-width: 768px) {
   .app-header {
     height: auto;
@@ -657,16 +457,8 @@ input[type="file"]::-webkit-file-upload-button:hover {
     justify-content: space-between;
   }
 
-  .brand-title {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .brand-title .system-name {
-    font-size: 13px;
-  }
-
-
+  .brand-title { flex-wrap: wrap; gap: 6px; }
+  .brand-title .system-name { font-size: 13px; }
 
   .header-actions {
     flex-wrap: wrap;
@@ -675,21 +467,9 @@ input[type="file"]::-webkit-file-upload-button:hover {
     justify-content: flex-end;
   }
 
-  .hdr-btn {
-    height: 30px;
-    padding: 0 10px;
-    font-size: 11px;
-  }
+  .workspace-content { padding: 12px; gap: 14px; }
 
-  .workspace-content {
-    padding: 12px;
-    gap: 14px;
-  }
-
-  .top-config-bar {
-    gap: 12px;
-    width: 100%;
-  }
+  .top-config-bar { gap: 12px; width: 100%; }
 
   .config-card {
     width: 100%;
@@ -699,32 +479,14 @@ input[type="file"]::-webkit-file-upload-button:hover {
     gap: 10px;
   }
 
-  .config-card-body {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .config-item {
-    flex-wrap: wrap;
-  }
+  .config-card-body { width: 100%; flex-wrap: wrap; gap: 10px; }
+  .config-item { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
-  .header-actions {
-    justify-content: space-between;
-  }
+  .header-actions { justify-content: space-between; }
 
-  .hdr-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 0 6px;
-  }
-
-  .config-card-body {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  .config-card-body { flex-direction: column; align-items: stretch; }
 
   .config-item {
     width: 100%;
@@ -735,10 +497,5 @@ input[type="file"]::-webkit-file-upload-button:hover {
   .config-item select {
     flex: 1;
     width: auto !important;
-  }
-
-  .config-card-body .btn {
-    width: 100%;
-    justify-content: center;
   }
 }
