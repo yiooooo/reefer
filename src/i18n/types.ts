@@ -165,6 +165,68 @@ export interface TranslationSchema {
     onboard: string;
     waiting: string;
   };
+  nav: {
+    menu: string;
+    reeferBonus: string;
+    admin: string;
+    account: string;
+    logout: string;
+    expandSidebar: string;
+    collapseSidebar: string;
+    adminRole: string;
+    crewRole: string;
+  };
+  login: {
+    systemTitle: string;
+    systemSubtitle: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    loginBtn: string;
+    loggingInBtn: string;
+    loginFailed: string;
+    invalidCredentials: string;
+    showPassword: string;
+    hidePassword: string;
+  };
+  admin: {
+    title: string;
+    desc: string;
+    userPermTitle: string;
+    userPermDesc: string;
+    sysSettingsTitle: string;
+    sysSettingsDesc: string;
+    reportsTitle: string;
+    reportsDesc: string;
+    comingSoon: string;
+  };
+  account: {
+    title: string;
+    subtitle: string;
+    detailsTitle: string;
+    displayName: string;
+    email: string;
+    role: string;
+    adminRole: string;
+    crewRole: string;
+    devicesTitle: string;
+    currentDevice: string;
+    inUseBadge: string;
+    onlineStatus: string;
+    browserType: string;
+    auditNotice: string;
+  };
+  notFound: {
+    title: string;
+    desc: string;
+    backBtn: string;
+  };
+  auth: {
+    forbiddenTitle: string;
+    forbiddenDesc: string;
+    loading: string;
+  };
   toasts: {
     addedContainers: string;
     deletedContainer: string;
