@@ -184,7 +184,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           for (let j = 0; j < itemChildren.length; j++) {
             const child = itemChildren[j];
             if (child.localName.toLowerCase() === 'group2') {
-              const dateLog = getTagValue(child, 'date_log') || getTagValue(child, 'date');
+              const rawDateLog = getTagValue(child, 'date_log') || getTagValue(child, 'date');
+              // 標準化為 YYYY-MM-DD：去除時間部分（T 之後或空格之後）、並將 / 轉為 -
+              let dateLog = '';
+              if (rawDateLog) {
+                const normalized = rawDateLog.replace(/\//g, '-').split('T')[0].split(' ')[0].trim();
+                // 若是合法的 YYYY-MM-DD 形式才採用，否則留空
+                dateLog = /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : '';
+              }
               const df1 = formatTempNumber(getTagValue(child, 'df_1'));
               const df2 = formatTempNumber(getTagValue(child, 'df_2'));
               const df3 = formatTempNumber(getTagValue(child, 'df_3'));
