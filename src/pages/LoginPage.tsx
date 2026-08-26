@@ -53,10 +53,10 @@ export const LoginPage: React.FC = () => {
             <Ship className="w-7 h-7" />
           </div>
           <CardTitle className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-sky-400 via-sky-200 to-indigo-300 bg-clip-text text-transparent">
-            {t('login.systemTitle')}
+            Vessel Management System
           </CardTitle>
           <CardDescription className="text-slate-400 text-xs mt-1">
-            {t('login.systemSubtitle')}
+            船舶管理系統
           </CardDescription>
         </CardHeader>
 

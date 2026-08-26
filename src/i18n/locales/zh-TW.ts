@@ -177,8 +177,6 @@ export const zhTW: TranslationSchema = {
     crewRole: '船員',
   },
   login: {
-    systemTitle: 'Reefer Bonus System',
-    systemSubtitle: '冷櫃獎金管理系統',
     emailLabel: '電子郵件',
     emailPlaceholder: '請輸入 Email',
     passwordLabel: '密碼',

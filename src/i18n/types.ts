@@ -177,8 +177,6 @@ export interface TranslationSchema {
     crewRole: string;
   };
   login: {
-    systemTitle: string;
-    systemSubtitle: string;
     emailLabel: string;
     emailPlaceholder: string;
     passwordLabel: string;

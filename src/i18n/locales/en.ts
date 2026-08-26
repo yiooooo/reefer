@@ -177,9 +177,7 @@ export const en: TranslationSchema = {
     crewRole: 'Crew',
   },
   login: {
-    systemTitle: 'Reefer Bonus System',
-    systemSubtitle: 'Reefer Bonus Management Platform',
-    emailLabel: 'Email Address',
+    emailLabel: 'Email',
     emailPlaceholder: 'Enter your email',
     passwordLabel: 'Password',
     passwordPlaceholder: '••••••••',
