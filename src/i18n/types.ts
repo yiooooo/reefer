@@ -187,6 +187,26 @@ export interface TranslationSchema {
     invalidCredentials: string;
     showPassword: string;
     hidePassword: string;
+    noAccountPrompt: string;
+    registerLink: string;
+  };
+  register: {
+    displayNameLabel: string;
+    displayNamePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    confirmPasswordLabel: string;
+    confirmPasswordPlaceholder: string;
+    registerBtn: string;
+    registeringBtn: string;
+    registerFailed: string;
+    emailExists: string;
+    passwordMismatch: string;
+    passwordTooShort: string;
+    hasAccountPrompt: string;
+    loginLink: string;
   };
   admin: {
     title: string;

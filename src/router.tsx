@@ -3,6 +3,7 @@ import { AuthLayout } from './layouts/AuthLayout';
 import { AppLayout } from './layouts/AppLayout';
 import { ProtectedRoute } from './layouts/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { ReeferBonusPage } from './pages/ReeferBonusPage';
 import { AdminPage } from './pages/AdminPage';
 import { AccountPage } from './pages/AccountPage';
@@ -16,6 +17,10 @@ export const router = createBrowserRouter([
       {
         path: '/login',
         element: <LoginPage />,
+      },
+      {
+        path: '/register',
+        element: <RegisterPage />,
       },
     ],
   },

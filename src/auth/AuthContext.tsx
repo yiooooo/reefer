@@ -14,6 +14,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, displayName?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAdmin: boolean;
 }
@@ -82,6 +83,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   );
 
+  const register = useCallback(
+    async (email: string, password: string, displayName?: string): Promise<{ success: boolean; error?: string }> => {
+      // 模擬網路延遲 (未來換 Supabase 時直接改為 supabase.auth.signUp)
+      await new Promise((r) => setTimeout(r, 600));
+
+      const exists = MOCK_USERS.some((u) => u.email.toLowerCase() === email.toLowerCase());
+      if (exists) {
+        return { success: false, error: '此電子郵件已被註冊' };
+      }
+
+      const authUser: AuthUser = {
+        id: `user-${Date.now()}`,
+        email,
+        role: 'crew',
+        displayName: displayName || email.split('@')[0],
+      };
+
+      // 模擬加至本地清單
+      MOCK_USERS.push({
+        id: authUser.id,
+        email: authUser.email,
+        password,
+        role: authUser.role,
+        displayName: authUser.displayName,
+      });
+
+      setUser(authUser);
+      try {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+      } catch {
+        // ignore
+      }
+
+      return { success: true };
+    },
+    []
+  );
+
   const logout = useCallback(() => {
     setUser(null);
     try {
@@ -95,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isLoading,
     login,
+    register,
     logout,
     isAdmin: user?.role === 'admin',
   };

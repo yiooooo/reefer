@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
-import { Ship, Eye, EyeOff, LogIn, Loader2 } from 'lucide-react';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { Ship, Eye, EyeOff, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useTranslation } from '../i18n/LanguageContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
@@ -9,33 +9,45 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-export const LoginPage: React.FC = () => {
+export const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
-  const { login, user } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   // 已登入 → 直接跳轉
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app/reefer-bonus';
-  if (user) return <Navigate to={from} replace />;
+  if (user) return <Navigate to="/app/reefer-bonus" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (password.length < 6) {
+      setError(t('register.passwordTooShort'));
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError(t('register.passwordMismatch'));
+      return;
+    }
+
     setIsLoading(true);
 
-    const result = await login(email.trim(), password);
+    const result = await register(email.trim(), password, displayName.trim());
 
     if (result.success) {
-      navigate(from, { replace: true });
+      navigate('/app/reefer-bonus', { replace: true });
     } else {
-      setError(result.error ? t('login.invalidCredentials') : t('login.loginFailed'));
+      setError(result.error || t('register.registerFailed'));
       setIsLoading(false);
     }
   };
@@ -62,15 +74,33 @@ export const LoginPage: React.FC = () => {
 
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+            {/* 顯示名稱 */}
             <div className="space-y-1.5">
-              <Label htmlFor="login-email" className="text-xs font-semibold text-slate-300">
-                {t('login.emailLabel')}
+              <Label htmlFor="register-name" className="text-xs font-semibold text-slate-300">
+                {t('register.displayNameLabel')}
               </Label>
               <Input
-                id="login-email"
+                id="register-name"
+                type="text"
+                autoComplete="name"
+                placeholder={t('register.displayNamePlaceholder')}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                disabled={isLoading}
+                className="bg-slate-800/80 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-sky-500 focus-visible:ring-sky-500/20 h-10"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="register-email" className="text-xs font-semibold text-slate-300">
+                {t('register.emailLabel')}
+              </Label>
+              <Input
+                id="register-email"
                 type="email"
                 autoComplete="email"
-                placeholder={t('login.emailPlaceholder')}
+                placeholder={t('register.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -79,16 +109,17 @@ export const LoginPage: React.FC = () => {
               />
             </div>
 
+            {/* 密碼 */}
             <div className="space-y-1.5">
-              <Label htmlFor="login-password" className="text-xs font-semibold text-slate-300">
-                {t('login.passwordLabel')}
+              <Label htmlFor="register-password" className="text-xs font-semibold text-slate-300">
+                {t('register.passwordLabel')}
               </Label>
               <div className="relative">
                 <Input
-                  id="login-password"
+                  id="register-password"
                   type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder={t('login.passwordPlaceholder')}
+                  autoComplete="new-password"
+                  placeholder={t('register.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -109,6 +140,37 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* 確認密碼 */}
+            <div className="space-y-1.5">
+              <Label htmlFor="register-confirm-password" className="text-xs font-semibold text-slate-300">
+                {t('register.confirmPasswordLabel')}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="register-confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder={t('register.confirmPasswordPlaceholder')}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="bg-slate-800/80 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:border-sky-500 focus-visible:ring-sky-500/20 h-10 pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  tabIndex={-1}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 hover:bg-transparent cursor-pointer"
+                  aria-label={showConfirmPassword ? t('login.hidePassword') : t('login.showPassword')}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+
             {error && (
               <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium" role="alert">
                 {error}
@@ -116,28 +178,28 @@ export const LoginPage: React.FC = () => {
             )}
 
             <Button
-              id="login-submit-btn"
+              id="register-submit-btn"
               type="submit"
-              disabled={isLoading || !email || !password}
+              disabled={isLoading || !email || !password || !confirmPassword}
               className="w-full h-10 font-bold bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white shadow-md shadow-sky-600/30 transition-all cursor-pointer mt-2"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <LogIn className="w-4 h-4 mr-1.5" />
+                <UserPlus className="w-4 h-4 mr-1.5" />
               )}
-              {isLoading ? t('login.loggingInBtn') : t('login.loginBtn')}
+              {isLoading ? t('register.registeringBtn') : t('register.registerBtn')}
             </Button>
           </form>
 
-          {/* 切換至註冊頁 */}
+          {/* 切換至登入頁 */}
           <div className="mt-6 text-center text-xs text-slate-400 border-t border-slate-800/80 pt-4">
-            <span>{t('login.noAccountPrompt')} </span>
+            <span>{t('register.hasAccountPrompt')} </span>
             <Link
-              to="/register"
+              to="/login"
               className="text-sky-400 hover:text-sky-300 font-semibold underline-offset-4 hover:underline transition-colors"
             >
-              {t('login.registerLink')}
+              {t('register.loginLink')}
             </Link>
           </div>
         </CardContent>
