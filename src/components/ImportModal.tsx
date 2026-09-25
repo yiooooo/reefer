@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Upload, CheckCircle, FileText } from 'lucide-react';
 import { ReeferContainer, TempRecord, CrewRecord } from '../types/reefer';
-import { calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
+import { formatTempNumber } from '../utils/tempGenerator';
+import { calculateReeferDaysAndCashApi } from '../api/tempApi';
 import {
   Dialog,
   DialogContent,
@@ -78,7 +79,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     reader.readAsText(file);
   };
 
-  const handleImportSubmit = () => {
+  const handleImportSubmit = async () => {
     const text = (uploadedContent || rawText).trim();
     if (!text) {
       alert(t('importModal.selectFileError'));
@@ -122,7 +123,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           }
         }
 
-        group1Nodes.forEach((itemNode) => {
+
+        for (const itemNode of group1Nodes) {
           const containerNumber = getTagValue(itemNode, 'container_number');
           const settingTemp = formatTempNumber(getTagValue(itemNode, 'setting_temp'));
           const commodity = getTagValue(itemNode, 'commodity');
@@ -185,11 +187,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             const child = itemChildren[j];
             if (child.localName.toLowerCase() === 'group2') {
               const rawDateLog = getTagValue(child, 'date_log') || getTagValue(child, 'date');
-              // 標準化為 YYYY-MM-DD：去除時間部分（T 之後或空格之後）、並將 / 轉為 -
               let dateLog = '';
               if (rawDateLog) {
                 const normalized = rawDateLog.replace(/\//g, '-').split('T')[0].split(' ')[0].trim();
-                // 若是合法的 YYYY-MM-DD 形式才採用，否則留空
                 dateLog = /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : '';
               }
               const df1 = formatTempNumber(getTagValue(child, 'df_1'));
@@ -229,7 +229,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             }
           }
 
-          const { days: computedDays, cash: computedCash } = calculateReeferDaysAndCash(
+          const { days: computedDays, cash: computedCash } = await calculateReeferDaysAndCashApi(
             loadingDatetime,
             dischargeDatetime,
             tempRecords.length
@@ -254,7 +254,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             tempRecords,
             crewRecords: crewRecords.length > 0 ? crewRecords : undefined,
           });
-        });
+        }
+
       } catch (err) {
         console.error('XML parse error:', err);
       }

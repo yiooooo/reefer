@@ -8,7 +8,8 @@ import { ExportModal } from '../components/ExportModal';
 import { ResetConfirmModal } from '../components/ResetConfirmModal';
 import { getInitialState, STORAGE_KEY } from '../utils/initialData';
 import { ReeferContainer, ReeferFormState, TempRecord } from '../types/reefer';
-import { generateAutoTempRecords, calculateReeferDaysAndCash, formatTempNumber } from '../utils/tempGenerator';
+import { formatTempNumber } from '../utils/tempGenerator';
+import { generateAutoTempRecordsApi, calculateReeferDaysAndCashApi } from '../api/tempApi';
 import { printHandoverForm } from '../utils/printHandover';
 import { findDuplicateLocations, DuplicateLocationModal } from '../components/DuplicateLocationModal';
 import { CheckCircle2 } from 'lucide-react';
@@ -160,19 +161,29 @@ export const ReeferBonusPage: React.FC = () => {
   };
 
 
-  const handleUpdateContainer = <K extends keyof ReeferContainer>(id: string, field: K, value: ReeferContainer[K]) => {
+  const handleUpdateContainer = async <K extends keyof ReeferContainer>(id: string, field: K, value: ReeferContainer[K]) => {
+    // 若更新裝卸船時間，先向後端取得計算結果（計費規則在後端，前端看不到）
+    let daysCash: { days: number; cash: number } | null = null;
+    if (field === 'loadingDatetime' || field === 'dischargeDatetime') {
+      const c = formState.containers.find((c) => c.id === id);
+      if (c) {
+        const loading = field === 'loadingDatetime' ? (value as string) : c.loadingDatetime;
+        const discharge = field === 'dischargeDatetime' ? (value as string) : c.dischargeDatetime;
+        try {
+          daysCash = await calculateReeferDaysAndCashApi(loading, discharge, c.tempRecords?.length || 0);
+        } catch (err) {
+          console.error('calculateDaysAndCash API failed:', err);
+        }
+      }
+    }
+
     setFormState((prev) => {
       const updatedContainers = prev.containers.map((c) => {
         if (c.id === id) {
           const updated = { ...c, [field]: value };
-          if (field === 'loadingDatetime' || field === 'dischargeDatetime') {
-            const { days, cash } = calculateReeferDaysAndCash(
-              updated.loadingDatetime,
-              updated.dischargeDatetime,
-              updated.tempRecords ? updated.tempRecords.length : 0
-            );
-            updated.days = days;
-            updated.cash = cash;
+          if (daysCash) {
+            updated.days = daysCash!.days;
+            updated.cash = daysCash!.cash;
           }
           return updated;
         }
@@ -194,79 +205,68 @@ export const ReeferBonusPage: React.FC = () => {
   };
 
   // 巡溫紀錄維護處置器
-  const handleAddTempRecord = (containerId: string, count: number = 1) => {
+  const handleAddTempRecord = async (containerId: string, count: number = 1) => {
+    const c = formState.containers.find((c) => c.id === containerId);
+    if (!c) return;
+
+    const newRecords: TempRecord[] = [...c.tempRecords];
+    let baseDateStr = c.loadingDatetime ? c.loadingDatetime.split('T')[0] : '';
+    if (newRecords.length > 0) {
+      const lastDateStr = newRecords[newRecords.length - 1].dateLog;
+      if (lastDateStr) {
+        const lastDate = new Date(lastDateStr);
+        if (!isNaN(lastDate.getTime())) baseDateStr = lastDateStr;
+      }
+    }
+
+    for (let i = 0; i < count; i++) {
+      let dateStr = baseDateStr;
+      if (baseDateStr) {
+        const d = new Date(baseDateStr);
+        d.setDate(d.getDate() + (newRecords.length > 0 ? i + 1 : i));
+        dateStr = d.toISOString().split('T')[0];
+      }
+      newRecords.push({ id: `tr-${Date.now()}-${i}`, dateLog: dateStr, df1: '', df2: '', df3: '', remark: '' });
+    }
+
+    let days = c.days;
+    let cash = c.cash;
+    try {
+      const result = await calculateReeferDaysAndCashApi(c.loadingDatetime, c.dischargeDatetime, newRecords.length);
+      days = result.days;
+      cash = result.cash;
+    } catch (err) {
+      console.error('calculateDaysAndCash API failed:', err);
+    }
+
     setFormState((prev) => ({
       ...prev,
-      containers: prev.containers.map((c) => {
-        if (c.id === containerId) {
-          const newRecords: TempRecord[] = [...c.tempRecords];
-          let baseDateStr = c.loadingDatetime ? c.loadingDatetime.split('T')[0] : '';
-          if (newRecords.length > 0) {
-            const lastDateStr = newRecords[newRecords.length - 1].dateLog;
-            if (lastDateStr) {
-              const lastDate = new Date(lastDateStr);
-              if (!isNaN(lastDate.getTime())) {
-                baseDateStr = lastDateStr;
-              }
-            }
-          }
-
-          for (let i = 0; i < count; i++) {
-            let dateStr = baseDateStr;
-            if (baseDateStr) {
-              const d = new Date(baseDateStr);
-              d.setDate(d.getDate() + (newRecords.length > 0 ? i + 1 : i));
-              dateStr = d.toISOString().split('T')[0];
-            }
-
-            newRecords.push({
-              id: `tr-${Date.now()}-${i}`,
-              dateLog: dateStr,
-              df1: '',
-              df2: '',
-              df3: '',
-              remark: '',
-            });
-          }
-
-          const { days, cash } = calculateReeferDaysAndCash(
-            c.loadingDatetime,
-            c.dischargeDatetime,
-            newRecords.length
-          );
-
-          return {
-            ...c,
-            tempRecords: newRecords,
-            days,
-            cash,
-          };
-        }
-        return c;
-      }),
+      containers: prev.containers.map((ct) =>
+        ct.id === containerId ? { ...ct, tempRecords: newRecords, days, cash } : ct
+      ),
     }));
   };
 
-  const handleDeleteTempRecord = (containerId: string, recordId: string) => {
+  const handleDeleteTempRecord = async (containerId: string, recordId: string) => {
+    const c = formState.containers.find((c) => c.id === containerId);
+    if (!c) return;
+
+    const updatedRecords = c.tempRecords.filter((r) => r.id !== recordId);
+    let days = c.days;
+    let cash = c.cash;
+    try {
+      const result = await calculateReeferDaysAndCashApi(c.loadingDatetime, c.dischargeDatetime, updatedRecords.length);
+      days = result.days;
+      cash = result.cash;
+    } catch (err) {
+      console.error('calculateDaysAndCash API failed:', err);
+    }
+
     setFormState((prev) => ({
       ...prev,
-      containers: prev.containers.map((c) => {
-        if (c.id === containerId) {
-          const updatedRecords = c.tempRecords.filter((r) => r.id !== recordId);
-          const { days, cash } = calculateReeferDaysAndCash(
-            c.loadingDatetime,
-            c.dischargeDatetime,
-            updatedRecords.length
-          );
-          return {
-            ...c,
-            tempRecords: updatedRecords,
-            days,
-            cash,
-          };
-        }
-        return c;
-      }),
+      containers: prev.containers.map((ct) =>
+        ct.id === containerId ? { ...ct, tempRecords: updatedRecords, days, cash } : ct
+      ),
     }));
   };
 
@@ -293,89 +293,99 @@ export const ReeferBonusPage: React.FC = () => {
     }));
   };
 
-  // 自動生成巡溫紀錄處置器
-  const handleAutoGenerateTemp = (containerId: string) => {
-    setFormState((prev) => ({
-      ...prev,
-      containers: prev.containers.map((c) => {
-        if (c.id === containerId) {
-          if (!c.loadingDatetime || !c.dischargeDatetime) return c; // 若無完整裝卸船日期則不處理
-          const autoRecords = generateAutoTempRecords(
-            c.settingTemp,
-            c.loadingDatetime,
-            c.dischargeDatetime
-          );
-          const { days, cash } = calculateReeferDaysAndCash(
-            c.loadingDatetime,
-            c.dischargeDatetime,
-            autoRecords.length
-          );
+  // 自動生成巡溫紀錄處置器（呼叫後端 API，算法不暴露在前端）
+  const handleAutoGenerateTemp = async (containerId: string) => {
+    const c = formState.containers.find((c) => c.id === containerId);
+    if (!c || !c.loadingDatetime || !c.dischargeDatetime) return;
 
-          return {
-            ...c,
-            tempRecords: autoRecords,
-            days,
-            cash,
-          };
-        }
-        return c;
-      }),
-    }));
+    try {
+      const autoRecords = await generateAutoTempRecordsApi(
+        c.settingTemp,
+        c.loadingDatetime,
+        c.dischargeDatetime
+      );
+      const { days, cash } = await calculateReeferDaysAndCashApi(
+        c.loadingDatetime,
+        c.dischargeDatetime,
+        autoRecords.length
+      );
 
-    showToast(t('toasts.autoTempSuccessSingle'));
+      setFormState((prev) => ({
+        ...prev,
+        containers: prev.containers.map((ct) =>
+          ct.id === containerId
+            ? { ...ct, tempRecords: autoRecords, days, cash }
+            : ct
+        ),
+      }));
+
+      showToast(t('toasts.autoTempSuccessSingle'));
+    } catch (err) {
+      console.error('Auto generate temp failed:', err);
+    }
   };
 
-  const handleAutoGenerateAllTemp = () => {
-    const targetContainers = formState.containers.filter(
-      (c) => !!c.loadingDatetime?.trim() && !!c.dischargeDatetime?.trim() && generateAutoTempRecords(c.settingTemp, c.loadingDatetime, c.dischargeDatetime).length > 0
+  const handleAutoGenerateAllTemp = async () => {
+    const eligibleContainers = formState.containers.filter(
+      (c) => !!c.loadingDatetime?.trim() && !!c.dischargeDatetime?.trim()
     );
 
-    if (targetContainers.length === 0) {
+    if (eligibleContainers.length === 0) {
       showToast(t('toasts.autoTempNoEligible'));
       return;
     }
 
-    const targetIds = new Set(targetContainers.map((c) => c.id));
-
-    setFormState((prev) => ({
-      ...prev,
-      containers: prev.containers.map((c) => {
-        if (targetIds.has(c.id)) {
-          const autoRecords = generateAutoTempRecords(
+    try {
+      // 平行呼叫 API 取得所有冷櫃的溫度紀錄
+      const results = await Promise.all(
+        eligibleContainers.map(async (c) => {
+          const autoRecords = await generateAutoTempRecordsApi(
             c.settingTemp,
             c.loadingDatetime,
             c.dischargeDatetime
           );
-          const { days, cash } = calculateReeferDaysAndCash(
+          const { days, cash } = await calculateReeferDaysAndCashApi(
             c.loadingDatetime,
             c.dischargeDatetime,
             autoRecords.length
           );
-          return {
-            ...c,
-            tempRecords: autoRecords,
-            days,
-            cash,
-          };
-        } else {
-          // 對於未符合自動生成條件的冷櫃（如有裝船無卸船），過濾掉全空白預留列
-          const cleanedRecords = (c.tempRecords || []).filter(
-            (r) => !!r.df1?.trim() || !!r.df2?.trim() || !!r.df3?.trim() || !!r.remark?.trim()
-          );
-          return {
-            ...c,
-            tempRecords: cleanedRecords,
-          };
-        }
-      }),
-    }));
+          return { id: c.id, autoRecords, days, cash };
+        })
+      );
 
-    showToast(t('toasts.autoTempSuccessAll', { count: targetContainers.length }));
+      const resultMap = new Map(results.map((r) => [r.id, r]));
+      const generatedCount = results.filter((r) => r.autoRecords.length > 0).length;
+
+      if (generatedCount === 0) {
+        showToast(t('toasts.autoTempNoEligible'));
+        return;
+      }
+
+      setFormState((prev) => ({
+        ...prev,
+        containers: prev.containers.map((c) => {
+          const result = resultMap.get(c.id);
+          if (result && result.autoRecords.length > 0) {
+            return { ...c, tempRecords: result.autoRecords, days: result.days, cash: result.cash };
+          } else {
+            // 對於未符合自動生成條件的冷櫃，過濾掉全空白預留列
+            const cleanedRecords = (c.tempRecords || []).filter(
+              (r) => !!r.df1?.trim() || !!r.df2?.trim() || !!r.df3?.trim() || !!r.remark?.trim()
+            );
+            return { ...c, tempRecords: cleanedRecords };
+          }
+        }),
+      }));
+
+      showToast(t('toasts.autoTempSuccessAll', { count: generatedCount }));
+    } catch (err) {
+      console.error('Auto generate all temp failed:', err);
+    }
   };
 
 
   // XML 與 TXT 檔案匯入處置器
-  const handleImportContainers = (
+  const handleImportContainers = async (
     importedData: Partial<ReeferContainer>[],
     metaData?: { voyage?: string; vesselName?: string },
     options: { duplicateMode?: 'allow_duplicate' | 'update_existing' | 'skip_existing' } = {}
@@ -386,8 +396,9 @@ export const ReeferBonusPage: React.FC = () => {
     let updatedCount = 0;
     let finalTotalCount = 0;
 
-    setFormState((prev) => {
-      const newContainers: ReeferContainer[] = importedData.map((item, index) => {
+    // 先平行呼叫 API 計算每個 container 的天數與獎金（計費規則在後端）
+    const computedList = await Promise.all(
+      importedData.map(async (item, index) => {
         const newId = `imported-${Date.now()}-${index}`;
         const rawTempRecords = item.tempRecords && item.tempRecords.length > 0 ? item.tempRecords : [];
         const tempRecords = rawTempRecords.map((r) => ({
@@ -397,11 +408,19 @@ export const ReeferBonusPage: React.FC = () => {
           df3: formatTempNumber(r.df3),
         }));
 
-        const { days: computedDays, cash: computedCash } = calculateReeferDaysAndCash(
-          item.loadingDatetime,
-          item.dischargeDatetime,
-          tempRecords.length
-        );
+        let computedDays = 1;
+        let computedCash = 400;
+        try {
+          const result = await calculateReeferDaysAndCashApi(
+            item.loadingDatetime,
+            item.dischargeDatetime,
+            tempRecords.length
+          );
+          computedDays = result.days;
+          computedCash = result.cash;
+        } catch (err) {
+          console.error('calculateDaysAndCash API failed for item:', err);
+        }
 
         const days = item.days || computedDays;
         const cash = item.cash || computedCash;
@@ -432,8 +451,12 @@ export const ReeferBonusPage: React.FC = () => {
                   { id: `cr-${newId}-3`, role: '3/O' },
                   { id: `cr-${newId}-4`, role: '3/E' },
                 ],
-        };
-      });
+        } as ReeferContainer;
+      })
+    );
+
+    setFormState((prev) => {
+      const newContainers = computedList;
 
       let updatedList: ReeferContainer[] = [];
 
@@ -466,11 +489,7 @@ export const ReeferBonusPage: React.FC = () => {
               (c) => c.containerNumber.trim().toUpperCase() === cntNum
             );
             if (existingIdx !== -1) {
-              resultList[existingIdx] = {
-                ...resultList[existingIdx],
-                ...newCnt,
-                id: resultList[existingIdx].id,
-              };
+              resultList[existingIdx] = { ...resultList[existingIdx], ...newCnt, id: resultList[existingIdx].id };
               updatedCount++;
             } else {
               resultList.push(newCnt);
@@ -485,9 +504,7 @@ export const ReeferBonusPage: React.FC = () => {
       }
 
       finalTotalCount = updatedList.length;
-
-      const nextSelectedId =
-        updatedList.length > 0 ? updatedList[updatedList.length - 1].id : null;
+      const nextSelectedId = updatedList.length > 0 ? updatedList[updatedList.length - 1].id : null;
 
       return {
         ...prev,
@@ -508,9 +525,7 @@ export const ReeferBonusPage: React.FC = () => {
     setTimeout(() => {
       setFormState((latestState) => {
         const dupes = findDuplicateLocations(latestState.containers);
-        if (dupes.length > 0) {
-          setIsDuplicateOpen(true);
-        }
+        if (dupes.length > 0) setIsDuplicateOpen(true);
         return latestState;
       });
     }, 100);

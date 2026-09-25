@@ -1,0 +1,144 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { TempRecord } from '../src/types/reefer'
+
+// 強健的日期解析器：同時相容 "YYYY/MM/DD HH:mm" 與 "YYYY-MM-DDTHH:mm"
+const parseDatetime = (str: string): Date | null => {
+  if (!str || !str.trim()) return null;
+  const normalized = str.trim().replace(/\//g, '-').replace(' ', 'T');
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const generateAutoTempRecords = (
+  settingTempStr: string,
+  loadingDatetimeStr: string,
+  dischargeDatetimeStr: string
+): TempRecord[] => {
+  // 必須同時提供有效的裝船與卸船日期時間，否則不進行自動生成
+  if (!loadingDatetimeStr || !dischargeDatetimeStr) return [];
+
+  const parsedStart = parseDatetime(loadingDatetimeStr);
+  const parsedEnd = parseDatetime(dischargeDatetimeStr);
+  if (!parsedStart || !parsedEnd) return [];
+
+  const baseTemp = parseFloat(settingTempStr) || 0.0;
+  const startDate = parsedStart;
+  const loadTimeMs = parsedStart.getTime();
+  const endDate = parsedEnd;
+  const dischargeTimeMs = parsedEnd.getTime();
+
+  const records: TempRecord[] = [];
+  const currDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const finalDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+  let idx = 0;
+  while (currDate.getTime() <= finalDate.getTime() && idx < 60) { // 上限最多產生 60 天紀錄
+    const year = currDate.getFullYear();
+    const month = String(currDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    // 當日 08:00、16:00、23:59 的時間戳記
+    const t08 = new Date(year, currDate.getMonth(), currDate.getDate(), 8, 0, 0).getTime();
+    const t16 = new Date(year, currDate.getMonth(), currDate.getDate(), 16, 0, 0).getTime();
+    const t23 = new Date(year, currDate.getMonth(), currDate.getDate(), 23, 59, 0).getTime();
+
+    // 產生帶有 ±0.5°C 浮動值的溫度數值字串
+    const genTemp = (slotTimeMs: number): string => {
+      // 必須介於裝船時間與卸船時間之間
+      if (slotTimeMs < loadTimeMs || slotTimeMs > dischargeTimeMs) {
+        return '';
+      }
+      const offset = (Math.random() * 1.0) - 0.5; // -0.5°C 至 +0.5°C 浮動
+      const val = baseTemp + offset;
+      return val.toFixed(1);
+    };
+
+    const df1 = genTemp(t08);
+    const df2 = genTemp(t16);
+    const df3 = genTemp(t23);
+
+    // 若當天 08:00, 16:00, 23:59 皆不在裝卸時間範圍內（全數為空白），則不保留該日紀錄列
+    if (df1 || df2 || df3) {
+      records.push({
+        id: `auto-tr-${Date.now()}-${idx}`,
+        dateLog: dateStr,
+        df1,
+        df2,
+        df3,
+        remark: '',
+      });
+    }
+
+    // 推進至下一天
+    currDate.setDate(currDate.getDate() + 1);
+    idx++;
+  }
+
+  return records;
+};
+
+const calculateReeferDaysAndCash = (
+  loadingDatetimeStr?: string,
+  dischargeDatetimeStr?: string,
+  tempRecordsLength: number = 0
+): { days: number; cash: number } => {
+  let days = 0;
+
+  if (loadingDatetimeStr && dischargeDatetimeStr) {
+    const loadDate = parseDatetime(loadingDatetimeStr);
+    const dischDate = parseDatetime(dischargeDatetimeStr);
+    if (loadDate && dischDate) {
+      const start = new Date(loadDate.getFullYear(), loadDate.getMonth(), loadDate.getDate());
+      const end = new Date(dischDate.getFullYear(), dischDate.getMonth(), dischDate.getDate());
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 3600 * 24)) + 1; // 含首尾天數
+      if (diffDays > 0) {
+        days = diffDays;
+      }
+    }
+  }
+
+  if (days === 0) {
+    days = tempRecordsLength > 0 ? tempRecordsLength : 1;
+  }
+
+  const cash = days >= 10 ? 800 : 400;
+  return { days, cash };
+};
+
+// ─── API Handler ──────────────────────────────────────────────────────────────
+
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  // 只允許 POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { action, settingTemp, loadingDatetime, dischargeDatatime, tempRecordsLength } = req.body;
+
+  if (action === 'generateTemp') {
+    // 自動產生溫度紀錄
+    if (!loadingDatetime || !dischargeDatatime) {
+      return res.status(400).json({ error: '需要提供裝船與卸船日期時間' });
+    }
+    const records = generateAutoTempRecords(
+      settingTemp ?? '0',
+      loadingDatetime,
+      dischargeDatatime
+    );
+    return res.status(200).json({ records });
+  }
+
+  if (action === 'calculateDaysAndCash') {
+    // 計算天數與獎金
+    const result = calculateReeferDaysAndCash(
+      loadingDatetime,
+      dischargeDatatime,
+      tempRecordsLength ?? 0
+    );
+    return res.status(200).json(result);
+  }
+
+  return res.status(400).json({ error: '未知的 action' });
+}
