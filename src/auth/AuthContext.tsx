@@ -23,6 +23,20 @@ interface AuthContextValue {
 
 const AUTH_STORAGE_KEY = 'reefer_app_auth_user';
 
+/**
+ * 暫時開放免登入訪客模式。
+ * 設為 true → 所有人直接以訪客身份進入，跳過登入/註冊。
+ * 日後串 Supabase 後改回 false 即可恢復完整驗證流程。
+ */
+export const GUEST_MODE = true;
+
+const GUEST_USER: AuthUser = {
+  id: 'guest-001',
+  email: 'guest@reefer.app',
+  role: 'crew',
+  displayName: '訪客',
+};
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,15 +47,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 初始化：從 localStorage 恢復 session
+  // 初始化：從 localStorage 恢復 session（或訪客模式自動登入）
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (stored) {
-        const parsed: AuthUser = JSON.parse(stored);
-        // 驗證 ID 仍在 mock 清單中（未來換 Supabase 後，改成 token 驗證）
-        const valid = MOCK_USERS.some((u) => u.id === parsed.id);
-        if (valid) setUser(parsed);
+      if (GUEST_MODE) {
+        // 訪客模式：直接注入訪客使用者，跳過所有驗證
+        setUser(GUEST_USER);
+      } else {
+        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (stored) {
+          const parsed: AuthUser = JSON.parse(stored);
+          // 驗證 ID 仍在 mock 清單中（未來換 Supabase 後，改成 token 驗證）
+          const valid = MOCK_USERS.some((u) => u.id === parsed.id);
+          if (valid) setUser(parsed);
+        }
       }
     } catch {
       // 損壞的 storage 就清掉

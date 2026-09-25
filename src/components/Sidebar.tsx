@@ -8,7 +8,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, GUEST_MODE } from '../auth/AuthContext';
 import { useTranslation } from '../i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +40,7 @@ export const Sidebar: React.FC = () => {
       to: '/app/account',
       icon: <UserCircle className="w-4 h-4 shrink-0" />,
       label: t('nav.account'),
-      show: true,
+      show: !GUEST_MODE,
     },
   ];
 
@@ -114,31 +114,33 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom: user info + logout */}
-      <div className="p-3 border-t border-slate-800/80 flex flex-col gap-2">
-        {!collapsed && user && (
-          <div className="px-2 py-1 flex flex-col">
-            <span className="text-xs font-bold text-slate-200 truncate">
-              {user.displayName}
-            </span>
-            <span className="text-[11px] font-medium text-slate-500">
-              {user.role === 'admin' ? t('nav.adminRole') : t('nav.crewRole')}
-            </span>
-          </div>
-        )}
-
-        <button
-          onClick={handleLogout}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer w-full",
-            collapsed && "justify-center px-0"
+      {/* Bottom: user info + logout（訪客模式下隱藏）*/}
+      {!GUEST_MODE && (
+        <div className="p-3 border-t border-slate-800/80 flex flex-col gap-2">
+          {!collapsed && user && (
+            <div className="px-2 py-1 flex flex-col">
+              <span className="text-xs font-bold text-slate-200 truncate">
+                {user.displayName}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">
+                {user.role === 'admin' ? t('nav.adminRole') : t('nav.crewRole')}
+              </span>
+            </div>
           )}
-          title={collapsed ? t('nav.logout') : undefined}
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>{t('nav.logout')}</span>}
-        </button>
-      </div>
+
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer w-full",
+              collapsed && "justify-center px-0"
+            )}
+            title={collapsed ? t('nav.logout') : undefined}
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>{t('nav.logout')}</span>}
+          </button>
+        </div>
+      )}
     </aside>
   );
 };
