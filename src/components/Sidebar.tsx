@@ -7,6 +7,7 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
+  Clock,
 } from 'lucide-react';
 import { useAuth, GUEST_MODE } from '../auth/AuthContext';
 import { useTranslation } from '../i18n/LanguageContext';
@@ -28,6 +29,12 @@ export const Sidebar: React.FC = () => {
       to: '/app/reefer-bonus',
       icon: <Thermometer className="w-4 h-4 shrink-0" />,
       label: t('nav.reeferBonus'),
+      show: true,
+    },
+    {
+      to: '/app/rest-hours',
+      icon: <Clock className="w-4 h-4 shrink-0" />,
+      label: t('nav.restHours'),
       show: true,
     },
     {

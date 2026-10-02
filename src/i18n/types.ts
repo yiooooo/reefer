@@ -168,6 +168,7 @@ export interface TranslationSchema {
   nav: {
     menu: string;
     reeferBonus: string;
+    restHours: string;
     admin: string;
     account: string;
     logout: string;

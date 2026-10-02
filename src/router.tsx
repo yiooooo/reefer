@@ -8,6 +8,7 @@ import { ReeferBonusPage } from './pages/ReeferBonusPage';
 import { AdminPage } from './pages/AdminPage';
 import { AccountPage } from './pages/AccountPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { RestHoursPage } from './pages/RestHoursPage';
 
 export const router = createBrowserRouter([
   // ── Auth Routes (無 Sidebar) ─────────────────────────────────────────────
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
       {
         path: '/app/reefer-bonus',
         element: <ReeferBonusPage />,
+      },
+      {
+        path: '/app/rest-hours',
+        element: <RestHoursPage />,
       },
       {
         path: '/app/admin',

@@ -168,6 +168,7 @@ export const zhTW: TranslationSchema = {
   nav: {
     menu: '功能選單',
     reeferBonus: '冷櫃作業',
+    restHours: '休息時數',
     admin: '管理入口',
     account: '帳號資訊',
     logout: '登出',

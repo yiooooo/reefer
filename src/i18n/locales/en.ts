@@ -168,6 +168,7 @@ export const en: TranslationSchema = {
   nav: {
     menu: 'Menu',
     reeferBonus: 'Reefer Operations',
+    restHours: 'Rest Hours',
     admin: 'Admin Portal',
     account: 'Account Info',
     logout: 'Logout',
