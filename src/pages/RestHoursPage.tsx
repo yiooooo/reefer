@@ -19,15 +19,30 @@ import {
 import { PartA } from '../components/restHours/PartA';
 import { PartB } from '../components/restHours/PartB';
 import { PartC } from '../components/restHours/PartC';
+import { PartD } from '../components/restHours/PartD';
 import { useToast } from '../context/ToastContext';
 
 export const RestHoursPage: React.FC = () => {
     const { showToast } = useToast();
     const [view, setView] = useState<RestHoursView>('PART_A');
-    const [selYear, setSelYear] = useState('2026');
+    const [selYear, setSelYear] = useState(() => String(new Date().getFullYear()));
     const [selMonth, setSelMonth] = useState(() =>
         String(new Date().getMonth() + 1).padStart(2, '0'),
     );
+
+    // 清理 2026/08 測試名單與測試動態殘留，確保所有月份恢復系統乾淨預設值
+    useEffect(() => {
+        try {
+            const c = localStorage.getItem('rest_hours_202608');
+            if (c && c.includes('李偉安')) {
+                localStorage.removeItem('rest_hours_202608');
+                localStorage.removeItem('vessel_schedule_202608');
+                localStorage.removeItem('all_crew_overrides_202608');
+            }
+        } catch {
+            // ignore
+        }
+    }, []);
 
     const [crewList, setCrewList] = useState<CrewMember[]>([]);
     const [groupDefs, setGroupDefs] = useState<GroupDef[]>(() =>
@@ -83,6 +98,7 @@ export const RestHoursPage: React.FC = () => {
         }
 
         setView('PART_A');
+        document.title = 'FLEET FORMs SYSTEM | 船員休息時數紀錄管理';
     }, [selYear, selMonth, crewStorageKey, vesselStorageKey, overrideStorageKey]);
 
     const prevYearMonth = getPrevYearMonth(selYear, selMonth);
@@ -162,12 +178,13 @@ export const RestHoursPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Stage Tabs (A / B / C) */}
+                {/* Stage Tabs (A / B / C / D) */}
                 <div className="flex items-center p-1 bg-slate-800/90 border border-slate-700/80 rounded-lg gap-1 shadow-inner">
                     {[
                         { id: 'PART_A', step: 'A', name: '人員設定' },
                         { id: 'PART_B', step: 'B', name: '船舶事件' },
                         { id: 'PART_C', step: 'C', name: '休息時數' },
+                        { id: 'PART_D', step: 'D', name: '無職災工時' },
                     ].map((tab) => {
                         const active = view === tab.id;
                         return (
@@ -175,18 +192,16 @@ export const RestHoursPage: React.FC = () => {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setView(tab.id as RestHoursView)}
-                                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold cursor-pointer transition-all ${
-                                    active
-                                        ? 'bg-sky-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold cursor-pointer transition-all ${active
+                                    ? 'bg-sky-600 text-white shadow-xs'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+                                    }`}
                             >
                                 <span
-                                    className={`size-4 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
-                                        active
-                                            ? 'bg-white text-sky-700'
-                                            : 'bg-slate-700 text-slate-300'
-                                    }`}
+                                    className={`size-4 rounded-full flex items-center justify-center text-[10px] font-extrabold ${active
+                                        ? 'bg-white text-sky-700'
+                                        : 'bg-slate-700 text-slate-300'
+                                        }`}
                                 >
                                     {tab.step}
                                 </span>
@@ -235,6 +250,17 @@ export const RestHoursPage: React.FC = () => {
                     onBackToB={() => setView('PART_B')}
                 />
             )}
+
+            {view === 'PART_D' && (
+                <PartD
+                    selYear={selYear}
+                    selMonth={selMonth}
+                    crewList={crewList}
+                    dailyData={vesselData}
+                    allCrewOverrides={overrides}
+                    onBackToC={() => setView('PART_C')}
+                />
+            )}
         </div>
     );
-}
+};

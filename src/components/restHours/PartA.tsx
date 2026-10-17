@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Save, Plus, Trash2, Ship, RefreshCw, Printer, GripVertical } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -11,10 +12,67 @@ import {
   SelectValue,
 } from '../ui/select';
 import type { CrewMember, GroupDef, ShipInfo, EngineCrewDutyType, ShiftChange, TimeShift } from '../../types/restHours';
-import { HOURS, MINUTES, MANEUVERING_MODES, DEFAULT_SHIP_INFO } from '../../utils/restHoursData';
+import { HOURS, MINUTES, MANEUVERING_MODES, DEFAULT_SHIP_INFO, DEFAULT_CREW_LIST, DEFAULT_GROUP_DEFINITIONS } from '../../utils/restHoursData';
 import { getShiftTheme, newCrewMember, getDaysInMonth } from '../../utils/restHoursUtils';
 import { TimeSelect } from './TimeSelect';
 import { useToast } from '../../context/ToastContext';
+
+export type PresetKey = 'p1' | 'p2' | 'p3' | 'p4' | 'p5' | 'custom';
+
+const PRESET_OPTIONS = [
+  {
+    key: 'p1' as const,
+    title: '大副班（4-8 班）',
+    timeText: '#1 04~08 ｜ #2 16~20',
+    shifts: [
+      { startHour: '04', startMin: '00', endHour: '08', endMin: '00' },
+      { startHour: '16', startMin: '00', endHour: '20', endMin: '00' },
+    ],
+  },
+  {
+    key: 'p2' as const,
+    title: '二副班（0~4 班）',
+    timeText: '#1 00~04 ｜ #2 12~16',
+    shifts: [
+      { startHour: '00', startMin: '00', endHour: '04', endMin: '00' },
+      { startHour: '12', startMin: '00', endHour: '16', endMin: '00' },
+    ],
+  },
+  {
+    key: 'p3' as const,
+    title: '三副班（8-12 班）',
+    timeText: '#1 08~12 ｜ #2 20~24',
+    shifts: [
+      { startHour: '08', startMin: '00', endHour: '12', endMin: '00' },
+      { startHour: '20', startMin: '00', endHour: '24', endMin: '00' },
+    ],
+  },
+  {
+    key: 'p4' as const,
+    title: '日班',
+    timeText: '#1 08~12 ｜ #2 13.5~17.5',
+    shifts: [
+      { startHour: '08', startMin: '00', endHour: '12', endMin: '00' },
+      { startHour: '13', startMin: '30', endHour: '17', endMin: '30' },
+    ],
+  },
+  {
+    key: 'p5' as const,
+    title: '廚師班',
+    timeText: '#1 06~08 ｜ #2 10~13 ｜ #3 15.5~18.5',
+    shifts: [
+      { startHour: '06', startMin: '00', endHour: '08', endMin: '00' },
+      { startHour: '10', startMin: '00', endHour: '13', endMin: '00' },
+      { startHour: '15', startMin: '30', endHour: '18', endMin: '30' },
+    ],
+  },
+  {
+    key: 'custom' as const,
+    title: '其他（自訂調整）',
+    timeText: '手動自訂 #1、#2 時間',
+    shifts: [] as TimeShift[],
+  },
+];
 
 interface PartAProps {
   selYear: string;
@@ -39,6 +97,7 @@ export const PartA: React.FC<PartAProps> = ({
   const storageKey = `rest_hours_${selYear}${selMonth}`;
 
   const [selIds, setSelIds] = useState<string[]>([]);
+  const [selectedPresetKey, setSelectedPresetKey] = useState<PresetKey>('p1');
   const [bs1, setBs1] = useState({ sH: '04', sM: '00', eH: '08', eM: '00' });
   const [bs2, setBs2] = useState({ sH: '16', sM: '00', eH: '20', eM: '00' });
 
@@ -59,6 +118,15 @@ export const PartA: React.FC<PartAProps> = ({
   });
   const [expandedCrewIds, setExpandedCrewIds] = useState<string[]>([]);
 
+  const handlePrintPartA = () => {
+    const origTitle = document.title;
+    document.title = ' ';
+    window.print();
+    setTimeout(() => {
+      document.title = origTitle;
+    }, 1000);
+  };
+
   const [shipInfo, setShipInfo] = useState<ShipInfo>(() => {
     try {
       return (
@@ -69,7 +137,6 @@ export const PartA: React.FC<PartAProps> = ({
       return DEFAULT_SHIP_INFO;
     }
   });
-  const [authorizedSignerId, setAuthorizedSignerId] = useState<string>(() => crewList[0]?.id || '');
 
   const onboardCount = crewList.filter(c => !(c.hasSignOff && c.signOffDate !== '')).length;
   const offboardCount = crewList.filter(c => c.hasSignOff && c.signOffDate !== '').length;
@@ -92,11 +159,13 @@ export const PartA: React.FC<PartAProps> = ({
     return true;
   });
 
-  const currentSignerObj = crewList.find(c => c.id === authorizedSignerId);
-  const signerDisplay = currentSignerObj
-    ? currentSignerObj.engName
-      ? `${currentSignerObj.engName}`
-      : currentSignerObj.name
+  const masterCrew =
+    crewList.find(c => c.rank.toUpperCase().includes('CAPT') || c.rank.toUpperCase().includes('MASTER')) ||
+    crewList[0];
+  const signerDisplay = masterCrew
+    ? masterCrew.engName
+      ? `${masterCrew.engName}`
+      : masterCrew.name
     : '';
 
   const engRanks =
@@ -405,8 +474,17 @@ export const PartA: React.FC<PartAProps> = ({
   // ─── 船員資料管理 ────────────────────────────────────────────────────────
   const save = () => {
     localStorage.setItem(storageKey, JSON.stringify(crewList));
-    showToast('【儲存成功】人員資料已儲存！');
+    showToast('【儲存成功】船員名單資料已儲存！');
   };
+
+  const handleResetToDefault = () => {
+    if (!window.confirm('確定要將人員名單與排班班次重設為系統預設值嗎？（目前的修改將被覆蓋）')) return;
+    setCrewList(DEFAULT_CREW_LIST);
+    localStorage.setItem(storageKey, JSON.stringify(DEFAULT_CREW_LIST));
+    setGroupDefinitions(prev => prev.map(g => g.id === 'g_9' ? { ...g, code: '廚', name: '大廚專用' } : g));
+    showToast('已重設為系統預設船員名單與班次！');
+  };
+
 
   const addRow = () => {
     setCrewList(p => [...p, newCrewMember()]);
@@ -418,21 +496,26 @@ export const PartA: React.FC<PartAProps> = ({
 
   const batch = (field: 'dutyShifts' | 'workingShifts') => {
     if (!selIds.length) return;
+    const currentPreset = PRESET_OPTIONS.find(p => p.key === selectedPresetKey);
+    let targetShifts: TimeShift[] = [];
+    if (selectedPresetKey === 'custom') {
+      targetShifts = [
+        { startHour: bs1.sH, startMin: bs1.sM, endHour: bs1.eH, endMin: bs1.eM },
+        { startHour: bs2.sH, startMin: bs2.sM, endHour: bs2.eH, endMin: bs2.eM },
+      ];
+    } else if (currentPreset) {
+      targetShifts = currentPreset.shifts.map(s => ({ ...s }));
+    }
+    if (!targetShifts.length) return;
+
     setCrewList(p =>
       p.map(c => {
         if (!selIds.includes(c.id)) return c;
-        const third = c[field][2];
-        const s1 = bs1;
-        const s2 = bs2;
-        const primary = field === 'dutyShifts' ? s1 : s2;
-        const secondary = field === 'dutyShifts' ? s2 : s1;
-        const sh = [
-          { startHour: primary.sH, startMin: primary.sM, endHour: primary.eH, endMin: primary.eM },
-          { startHour: secondary.sH, startMin: secondary.sM, endHour: secondary.eH, endMin: secondary.eM },
-        ];
-        if (third) sh.push(third);
-        return { ...c, [field]: sh };
+        return { ...c, [field]: targetShifts.map(s => ({ ...s })) };
       }),
+    );
+    showToast(
+      `已為選取的 ${selIds.length} 位人員套用${field === 'dutyShifts' ? '海上' : '港口'}工作時間設定`
     );
   };
 
@@ -444,7 +527,7 @@ export const PartA: React.FC<PartAProps> = ({
         if (sh.length >= 3) {
           sh.splice(2, 1);
         } else {
-          sh.push({ startHour: '16', startMin: '00', endHour: '19', endMin: '00' });
+          sh.push({ startHour: '15', startMin: '30', endHour: '18', endMin: '30' });
         }
         return { ...c, [field]: sh };
       }),
@@ -563,25 +646,6 @@ export const PartA: React.FC<PartAProps> = ({
               船員名單與工作安排表 | {selYear} 年 {selMonth} 月
             </span>
           </div>
-
-          <div className="flex items-center gap-1.5 sm:border-l border-slate-200 sm:pl-3">
-            <label className="font-semibold text-slate-600 text-xs whitespace-nowrap">授權簽署主管:</label>
-            <Select
-              value={authorizedSignerId || (crewList[0]?.id ?? undefined)}
-              onValueChange={setAuthorizedSignerId}
-            >
-              <SelectTrigger className="h-7 text-xs font-semibold text-blue-900 bg-slate-50 border-slate-300 w-44 focus:ring-sky-500">
-                <SelectValue placeholder="選擇主管" />
-              </SelectTrigger>
-              <SelectContent>
-                {crewList.map(c => (
-                  <SelectItem key={c.id} value={c.id} className="text-xs">
-                    {c.rank || '未設定'}: {c.name || c.engName || '未命名'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
@@ -601,7 +665,7 @@ export const PartA: React.FC<PartAProps> = ({
             <span className="sm:hidden">{isEditingShipInfo ? '收合' : '船舶/機艙'}</span>
           </Button>
 
-          {/* 2. 列印工作安排表 (Neutral Slate Outline) */}
+          {/* 列印工作安排表 (Neutral Slate Outline) */}
           <Button
             variant="outline"
             size="sm"
@@ -611,6 +675,20 @@ export const PartA: React.FC<PartAProps> = ({
             <Printer className="size-3.5 text-slate-600" />
             <span className="hidden sm:inline">列印工作安排表</span>
             <span className="sm:hidden">列印</span>
+          </Button>
+
+
+          {/* 重設預設名單 (Rose Outline) */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetToDefault}
+            className="border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-semibold shadow-xs cursor-pointer"
+            title="將船員名單與排班班次恢復為系統預設值（王建國船長 12 人名單）"
+          >
+            <RefreshCw className="size-3.5 text-rose-600" />
+            <span className="hidden sm:inline">重設預設</span>
+            <span className="sm:hidden">重設</span>
           </Button>
 
           {/* 儲存人員資料 (Emerald Save) */}
@@ -844,91 +922,153 @@ export const PartA: React.FC<PartAProps> = ({
       )}
 
       {/* 批次操作列 */}
-      <section className="relative bg-white border border-blue-200/80 rounded-xl shadow-xs p-3.5 pt-4 flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
-        <span className="absolute -top-2.5 left-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded shadow-xs tracking-wider">
+      <section className="relative mt-3 pt-1.5">
+        <span className="absolute -top-1.5 left-4 z-10 bg-gradient-to-r from-slate-900 to-slate-700 text-white text-[10px] font-bold px-2.5 py-0.5 rounded shadow-xs tracking-wider select-none">
           批次工作時段操作
         </span>
-        <Badge variant="secondary" className="bg-blue-50 text-blue-800 border-blue-200 text-xs font-semibold whitespace-nowrap">
-          已選取: {selIds.length} 人
-        </Badge>
-        {([
-          { label: '#1', bs: bs1, set: setBs1 },
-          { label: '#2', bs: bs2, set: setBs2 },
-        ] as const).map(({ label, bs, set }) => (
-          <div
-            key={label}
-            className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs shadow-2xs"
-          >
-            <span className="font-bold text-blue-900">{label}</span>
-            <Select value={bs.sH} onValueChange={v => set({ ...bs, sH: v })}>
-              <SelectTrigger className="h-6 w-14 px-1.5 text-xs bg-white border-slate-300">
-                <SelectValue />
+
+        <div className="bg-gradient-to-r from-blue-50/70 via-slate-50 to-indigo-50/50 border border-blue-200/90 rounded-xl shadow-xs px-3.5 py-2.5 pt-3.5 flex items-center justify-between gap-3 flex-nowrap overflow-x-auto text-xs">
+          {/* 左側：選取人數、時段範本選單、與時段顯示/自訂調整（全部單行） */}
+          <div className="flex items-center gap-2.5 shrink-0 flex-nowrap">
+            <Badge variant="secondary" className="bg-blue-100/90 text-blue-900 border-blue-300 text-xs font-semibold whitespace-nowrap px-2.5 py-1 shrink-0">
+              已選取: {selIds.length} 人
+          </Badge>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-slate-600 font-bold whitespace-nowrap text-xs">時段設定：</span>
+            <Select
+              value={selectedPresetKey}
+              onValueChange={(v: PresetKey) => {
+                setSelectedPresetKey(v);
+                const p = PRESET_OPTIONS.find(o => o.key === v);
+                if (p && p.shifts.length >= 2) {
+                  setBs1({ sH: p.shifts[0].startHour, sM: p.shifts[0].startMin, eH: p.shifts[0].endHour, eM: p.shifts[0].endMin });
+                  setBs2({ sH: p.shifts[1].startHour, sM: p.shifts[1].startMin, eH: p.shifts[1].endHour, eM: p.shifts[1].endMin });
+                }
+              }}
+            >
+              <SelectTrigger className="h-7.5 w-[190px] text-xs bg-white border-slate-300 font-semibold shadow-2xs shrink-0">
+                <SelectValue>
+                  {PRESET_OPTIONS.find(p => p.key === selectedPresetKey)?.title || '選擇時段'}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent className="max-h-56">
-                {HOURS.slice(0, 24).map(h => (
-                  <SelectItem key={h} value={h} className="text-xs">
-                    {h}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>:</span>
-            <Select value={bs.sM} onValueChange={v => set({ ...bs, sM: v })}>
-              <SelectTrigger className="h-6 w-14 px-1.5 text-xs bg-white border-slate-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-56">
-                {MINUTES.map(m => (
-                  <SelectItem key={m} value={m} className="text-xs">
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-slate-400">~</span>
-            <Select value={bs.eH} onValueChange={v => set({ ...bs, eH: v })}>
-              <SelectTrigger className="h-6 w-14 px-1.5 text-xs bg-white border-slate-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-56">
-                {HOURS.map(h => (
-                  <SelectItem key={h} value={h} className="text-xs">
-                    {h}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>:</span>
-            <Select value={bs.eM} onValueChange={v => set({ ...bs, eM: v })}>
-              <SelectTrigger className="h-6 w-14 px-1.5 text-xs bg-white border-slate-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-56">
-                {MINUTES.map(m => (
-                  <SelectItem key={m} value={m} className="text-xs">
-                    {m}
+              <SelectContent className="min-w-[340px]">
+                {PRESET_OPTIONS.map(opt => (
+                  <SelectItem key={opt.key} value={opt.key} className="py-2 px-2.5 cursor-pointer">
+                    <div className="flex items-center justify-between w-full gap-3">
+                      <span className="font-bold text-slate-800 text-xs shrink-0">{opt.title}</span>
+                      <span className="text-[11px] text-blue-700 bg-blue-50/80 px-1.5 py-0.5 rounded border border-blue-200/60 font-mono whitespace-nowrap">
+                        {opt.timeText}
+                      </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        ))}
-        <Button
-          size="xs"
-          disabled={!selIds.length}
-          onClick={() => batch('dutyShifts')}
-          className="bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-xs disabled:opacity-40 cursor-pointer h-7"
-        >
-          <span>批次設定海上工作時間</span>
-        </Button>
-        <Button
-          size="xs"
-          disabled={!selIds.length}
-          onClick={() => batch('workingShifts')}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs disabled:opacity-40 cursor-pointer h-7"
-        >
-          <span>批次設定港口工作時間</span>
-        </Button>
+
+          {/* 若為固定班別：直觀展示該班別之各時段預覽標籤 */}
+          {selectedPresetKey !== 'custom' && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              {PRESET_OPTIONS.find(p => p.key === selectedPresetKey)?.shifts.map((s, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-0.5 text-xs shadow-2xs shrink-0"
+                >
+                  <span className="px-1 py-0.2 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    #{idx + 1}
+                  </span>
+                  <span className="font-mono text-slate-800 font-semibold text-[11px]">
+                    {s.startHour}:{s.startMin} ~ {s.endHour}:{s.endMin}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 若為自訂調整（其他）：在同行直接提供 #1 與 #2 微調下拉框 */}
+          {selectedPresetKey === 'custom' && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              {([
+                { label: '#1', bs: bs1, set: setBs1, badgeCls: 'bg-blue-100 text-blue-800 border-blue-200' },
+                { label: '#2', bs: bs2, set: setBs2, badgeCls: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+              ] as const).map(({ label, bs, set, badgeCls }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-1 bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs shadow-2xs shrink-0"
+                >
+                  <span className={`px-1 py-0.2 rounded text-[10px] font-bold border ${badgeCls} shrink-0`}>
+                    {label}
+                  </span>
+                  <Select value={bs.sH} onValueChange={v => set({ ...bs, sH: v })}>
+                    <SelectTrigger className="h-6 w-11 px-1 text-xs bg-white border-slate-300 text-center font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {HOURS.slice(0, 24).map(h => (
+                        <SelectItem key={h} value={h} className="text-xs">{h}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="font-bold text-slate-400">:</span>
+                  <Select value={bs.sM} onValueChange={v => set({ ...bs, sM: v })}>
+                    <SelectTrigger className="h-6 w-11 px-1 text-xs bg-white border-slate-300 text-center font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {MINUTES.map(m => (
+                        <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-slate-400 font-bold mx-0.5">~</span>
+                  <Select value={bs.eH} onValueChange={v => set({ ...bs, eH: v })}>
+                    <SelectTrigger className="h-6 w-11 px-1 text-xs bg-white border-slate-300 text-center font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {HOURS.map(h => (
+                        <SelectItem key={h} value={h} className="text-xs">{h}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="font-bold text-slate-400">:</span>
+                  <Select value={bs.eM} onValueChange={v => set({ ...bs, eM: v })}>
+                    <SelectTrigger className="h-6 w-11 px-1 text-xs bg-white border-slate-300 text-center font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-56">
+                      {MINUTES.map(m => (
+                        <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 右側：批次套用操作按鈕 */}
+        <div className="flex items-center gap-2 ml-auto shrink-0 flex-nowrap">
+          <Button
+            size="xs"
+            disabled={!selIds.length}
+            onClick={() => batch('dutyShifts')}
+            className="bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-xs disabled:opacity-40 cursor-pointer h-7.5 px-3 whitespace-nowrap shrink-0"
+          >
+            <span>批次設定海上工作時間</span>
+          </Button>
+          <Button
+            size="xs"
+            disabled={!selIds.length}
+            onClick={() => batch('workingShifts')}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs disabled:opacity-40 cursor-pointer h-7.5 px-3 whitespace-nowrap shrink-0"
+          >
+            <span>批次設定港口工作時間</span>
+          </Button>
+        </div>
+        </div>
       </section>
 
       {/* 人員表格 */}
@@ -1721,37 +1861,104 @@ export const PartA: React.FC<PartAProps> = ({
               ))}
             </div>
 
-            <div className="flex justify-end space-x-2 pt-2 border-t border-slate-200">
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowGroupManagerModal(false)}
+                type="button"
+                onClick={() => {
+                  if (!window.confirm('確定要將群組設定恢復為系統預設值嗎？')) return;
+                  setGroupDefinitions(DEFAULT_GROUP_DEFINITIONS);
+                  localStorage.setItem('custom_group_definitions_v2', JSON.stringify(DEFAULT_GROUP_DEFINITIONS));
+                  showToast('已重設為系統預設群組！');
+                }}
+                className="text-rose-600 border-rose-200 hover:bg-rose-50"
               >
-                取消
+                重設預設群組
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSaveGroupDefinitions}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs cursor-pointer"
-              >
-                <Save className="size-3.5" />
-                保存群組設定
-              </Button>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowGroupManagerModal(false)}
+                >
+                  取消
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveGroupDefinitions}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs cursor-pointer"
+                >
+                  <Save className="size-3.5" />
+                  保存群組設定
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* 船上工作安排表列印預覽彈出視窗 (showPrintModal) */}
-      {showPrintModal && (
+      {showPrintModal && createPortal(
         <div id="print-modal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 overflow-y-auto">
-          <div className="bg-white rounded shadow-2xl max-w-[850px] w-full p-2.5 text-slate-900 my-auto text-xs">
-            <div className="flex justify-between items-center pb-1 mb-1 border-b border-slate-200 print:hidden font-sans">
+          {/* 專屬 A4 直向 1 頁列印樣式，消除邊距隱藏瀏覽器標題與日期 */}
+          <style>{`
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+            @media print {
+              html, body {
+                width: 210mm !important;
+                height: auto !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                overflow: visible !important;
+              }
+              /* 完全移除網頁其他內容(含 #root)，不佔用高度 */
+              body > *:not(#print-modal) {
+                display: none !important;
+              }
+              #print-modal {
+                position: static !important;
+                display: block !important;
+                padding: 0 !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                overflow: visible !important;
+              }
+              #part-a-print-sheet {
+                position: static !important;
+                width: 210mm !important;
+                max-width: none !important;
+                height: 296mm !important;
+                max-height: 296mm !important;
+                margin: 0 !important;
+                padding: 6mm 8mm !important;
+                box-sizing: border-box !important;
+                background: #fff !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                overflow: hidden !important;
+              }
+              .no-print, .print\\:hidden {
+                display: none !important;
+              }
+            }
+          `}</style>
+          <div id="part-a-print-sheet" className="bg-white rounded shadow-2xl max-w-[850px] w-full p-2.5 text-slate-900 my-auto text-xs">
+            <div className="flex justify-between items-center pb-1 mb-1 border-b border-slate-200 print:hidden font-sans no-print">
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-xs text-blue-950">船上工作安排表列印預覽</span>
               </div>
               <div className="space-x-2 flex items-center">
-                <Button size="xs" onClick={() => window.print()} className="bg-blue-700 hover:bg-blue-800 text-white font-bold flex items-center gap-1">
+                <Button size="xs" onClick={handlePrintPartA} className="bg-blue-700 hover:bg-blue-800 text-white font-bold flex items-center gap-1 cursor-pointer">
                   <Printer className="size-3.5" />
                   <span>列印此表單 (Print)</span>
                 </Button>
@@ -1761,11 +1968,27 @@ export const PartA: React.FC<PartAProps> = ({
               </div>
             </div>
 
-            <div className="flex justify-between items-center mb-1 leading-none select-none text-[14px]">
-              <div className="text-slate-900 font-normal">
-                資料分級︰□一般 ■內部 □限閱 □機密
+            <div className="flex justify-between items-center mb-1 leading-none select-none text-[13px] text-slate-900 font-normal">
+              <div className="flex items-center gap-2">
+                <span>資料分級：</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block w-3.5 h-3.5 border border-black bg-white shrink-0" />
+                  <span>一般</span>
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block w-3.5 h-3.5 bg-black border border-black shrink-0 [print-color-adjust:exact]" />
+                  <span>內部</span>
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block w-3.5 h-3.5 border border-black bg-white shrink-0" />
+                  <span>限閱</span>
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block w-3.5 h-3.5 border border-black bg-white shrink-0" />
+                  <span>機密</span>
+                </span>
               </div>
-              <div className="text-slate-900 font-normal">
+              <div>
                 (2900A900)附件/Appendix 97
               </div>
             </div>
@@ -2081,7 +2304,8 @@ export const PartA: React.FC<PartAProps> = ({
               <span>(表單編號 Form No. : 4M-951-06) (2025.11)</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

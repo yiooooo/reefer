@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Anchor, Save, Clock, HelpCircle } from 'lucide-react';
+import { Anchor, Save, Clock, HelpCircle, X, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
@@ -240,6 +240,15 @@ export const PartB: React.FC<PartBProps> = ({
     });
   };
 
+
+  const handleResetToEmpty = () => {
+    if (!window.confirm('確定要清除當月所有船舶事件並還原為初始空白狀態嗎？')) return;
+    const emptySchedule: Record<string, DayData> = {};
+    setDailyData(emptySchedule);
+    localStorage.removeItem(storageKey);
+    showToast('【重設完成】當月船舶事件表已還原為初始空白狀態！');
+  };
+
   const hhov = hoverSlot !== null ? Math.floor(hoverSlot / 2) : null;
 
   return (
@@ -254,6 +263,20 @@ export const PartB: React.FC<PartBProps> = ({
           </span>
         </div>
         <div className="flex items-center flex-wrap gap-2">
+
+          {/* 重設事件表 (Rose Outline) */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetToEmpty}
+            className="border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 font-semibold shadow-xs cursor-pointer"
+            title="將當月所有船舶事件與覆蓋全部清空，還原為初始空白狀態"
+          >
+            <RefreshCw className="size-3.5 text-rose-600" />
+            <span className="hidden sm:inline">重設事件表</span>
+            <span className="sm:hidden">重設</span>
+          </Button>
+
           {/* 靠離港精靈 (Amber Tool) */}
           <Button
             variant="outline"
@@ -346,13 +369,25 @@ export const PartB: React.FC<PartBProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <Input
-            type="text"
-            placeholder="說明"
-            value={ev.remark}
-            onChange={e => setEv({ ...ev, remark: e.target.value })}
-            className="h-7 w-28 px-2 py-0 bg-slate-50 border-slate-300 text-xs"
-          />
+          <div className="relative flex items-center">
+            <Input
+              type="text"
+              placeholder="說明"
+              value={ev.remark}
+              onChange={e => setEv({ ...ev, remark: e.target.value })}
+              className="h-7 w-32 pl-2 pr-6 py-0 bg-slate-50 border-slate-300 text-xs"
+            />
+            {ev.remark && (
+              <button
+                type="button"
+                onClick={() => setEv({ ...ev, remark: '' })}
+                className="absolute right-1 text-slate-400 hover:text-slate-600 rounded-full p-0.5 hover:bg-slate-200 transition-colors cursor-pointer"
+                title="清除說明"
+              >
+                <X className="size-3" />
+              </button>
+            )}
+          </div>
           <Button
             size="xs"
             onClick={applyEv}
@@ -476,7 +511,12 @@ export const PartB: React.FC<PartBProps> = ({
         <table className="w-full min-w-[1450px] text-center border-collapse table-fixed">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-800 font-bold h-8 text-xs">
-              <th className="w-10 border-r border-slate-300">國定假</th>
+              <th
+                className="w-10 border-r border-slate-300 cursor-help"
+                title="國定假日：勾選後該日有工作皆全額計入超時工時"
+              >
+                國定假
+              </th>
               <th className="w-14 border-r border-slate-300">星期</th>
               <th className="w-24 border-r border-slate-300">日期</th>
               {Array.from({ length: 24 }, (_, h) => (
@@ -546,7 +586,8 @@ export const PartB: React.FC<PartBProps> = ({
                           },
                         }))
                       }
-                      className="rounded text-rose-600 w-3.5 h-3.5"
+                      title={dd.isCustomHoliday ? '國定假日（有工作全額計入超時工時）' : '勾選設為國定假日'}
+                      className="rounded text-rose-600 w-3.5 h-3.5 cursor-pointer"
                     />
                   </td>
                   <td

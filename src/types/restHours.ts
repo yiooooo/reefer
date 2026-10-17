@@ -73,6 +73,7 @@ export interface DisplayRow {
   weekName: string;
   isWeekend: boolean;
   dayNum: number;
+  dayOfWeek?: number;
 }
 
 export type EngineCrewDutyType = 'MAN_ZERO' | 'DAY_WORK' | 'ON_CALL';
@@ -96,4 +97,4 @@ export interface ShipInfo {
   engineersOnCallRanks: string[];
 }
 
-export type RestHoursView = 'PART_A' | 'PART_B' | 'PART_C';
+export type RestHoursView = 'PART_A' | 'PART_B' | 'PART_C' | 'PART_D';

@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { RotateCcw, Save } from 'lucide-react';
+import { RotateCcw, Save, Printer } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
+import { PrintRestHoursModal } from './PrintRestHoursModal';
+import { PrintOvertimeModal } from './PrintOvertimeModal';
 import type { CrewMember, DayData, CrewOverrides } from '../../types/restHours';
 import { STATUS_DEFINITIONS, C_STATUS_CYCLE, emptyDay } from '../../utils/restHoursData';
 import {
@@ -9,7 +11,11 @@ import {
   getDaysInMonth,
   getLookbackMonthSlots,
   evaluateMLCWithLookback,
+  get24hRestPeriods,
   resolveCrewWorkSlots,
+  calculateOvertimeHours,
+  isSlotOnBoard,
+  isDayCompletelyOffBoard,
 } from '../../utils/restHoursUtils';
 import { useToast } from '../../context/ToastContext';
 
@@ -44,6 +50,8 @@ interface DRow {
   slotV: string[][];
   min24: string;
   min7: string;
+  offBoardType: 'BEFORE_SIGN_ON' | 'AFTER_SIGN_OFF' | null;
+  slotOnBoard: boolean[];
 }
 
 export const PartC: React.FC<PartCProps> = ({
@@ -63,6 +71,8 @@ export const PartC: React.FC<PartCProps> = ({
   const [selCrew, setSelCrew] = useState<string>(() => crewList[0]?.id || '');
   const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [hoverSlot, setHoverSlot] = useState<number | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
+  const [showPrintOtModal, setShowPrintOtModal] = useState<boolean>(false);
 
   // Sync selected crew if current selection is invalid
   useEffect(() => {
@@ -79,7 +89,7 @@ export const PartC: React.FC<PartCProps> = ({
   const deficits = useMemo(() => {
     const s: Record<string, { hasDeficit: boolean; hasCustomTrace: boolean }> = {};
     crewList.forEach(crew => {
-      const lb = getLookbackMonthSlots(selYear, selMonth, crew.id, 6);
+      const lb = getLookbackMonthSlots(selYear, selMonth, crew.id, 6, crew);
       const cur: number[] = [];
       const ov = allCrewOverrides[crew.id] || { slots: {}, remarks: {} };
       let hcs = false;
@@ -113,7 +123,7 @@ export const PartC: React.FC<PartCProps> = ({
 
   const crewData = useMemo((): DRow[] => {
     if (!sim) return [];
-    const lb = getLookbackMonthSlots(selYear, selMonth, sim.id, 6);
+    const lb = getLookbackMonthSlots(selYear, selMonth, sim.id, 6, sim);
     const cur: number[] = [];
     const drows: DRow[] = [];
     const ov = allCrewOverrides[sim.id] || { slots: {}, remarks: {} };
@@ -125,20 +135,38 @@ export const PartC: React.FC<PartCProps> = ({
       const base: (string | null)[] = [];
       const final: (string | null)[] = [];
       const isC: boolean[] = [];
+      const slotOnBoard: boolean[] = [];
+
+      const offType = isDayCompletelyOffBoard(sim, ds);
 
       for (let sIdx = 0; sIdx < 48; sIdx++) {
-        const b = resolveCrewWorkSlots(sim, dd, ds, sIdx);
-        base.push(b);
-        const f = os[sIdx] !== undefined ? os[sIdx] : b;
-        final.push(f);
-        isC.push(os[sIdx] !== undefined && os[sIdx] !== b);
+        const onBoard = isSlotOnBoard(sim, ds, sIdx);
+        slotOnBoard.push(onBoard);
+
+        if (!onBoard) {
+          base.push(null);
+          final.push(null);
+          isC.push(false);
+        } else {
+          const b = resolveCrewWorkSlots(sim, dd, ds, sIdx);
+          base.push(b);
+          const f = os[sIdx] !== undefined ? os[sIdx] : b;
+          final.push(f);
+          isC.push(os[sIdx] !== undefined && os[sIdx] !== b);
+        }
       }
       final.forEach(f => cur.push(f ? 0 : 1));
 
       const wc = final.filter(Boolean).length;
       const wh = wc * 0.5;
-      const ar = ov.remarks?.[row.rowKey] !== undefined ? ov.remarks[row.rowKey] : (dd.remark || '');
-      const hcr = ov.remarks?.[row.rowKey] !== undefined && ov.remarks[row.rowKey] !== (dd.remark || '');
+
+      // 若當日整天完全未在船，說明欄與工時均為空白；在船日則顯示備註
+      const ar = offType
+        ? ''
+        : ov.remarks?.[row.rowKey] !== undefined
+          ? ov.remarks[row.rowKey]
+          : (dd.remark || '');
+      const hcr = !offType && ov.remarks?.[row.rowKey] !== undefined && ov.remarks[row.rowKey] !== (dd.remark || '');
 
       drows.push({
         rowKey: row.rowKey,
@@ -152,48 +180,94 @@ export const PartC: React.FC<PartCProps> = ({
         base,
         final,
         isCustom: isC,
-        workH: wh.toFixed(1),
-        otH: Math.max(0, wh - 8).toFixed(1),
+        workH: offType ? '' : wh.toFixed(1),
+        otH: offType ? '' : calculateOvertimeHours(wh, row.weekName, !!dd.isCustomHoliday).toFixed(1),
         remark: ar,
         hasCustomRemark: hcr,
         hasViolation: false,
         slotV: Array.from({ length: 48 }, () => []),
-        min24: '24.0',
-        min7: '168.0',
+        min24: '',
+        min7: '',
+        offBoardType: offType,
+        slotOnBoard,
       });
     });
 
     const full = [...lb, ...cur];
     const viol = evaluateMLCWithLookback(full, lb.length);
 
+    // 建立整段資料的前綴和，消除迴圈中大量的 slice() 與 filter() 記憶體配置，實現毫秒級即時點擊反應
+    const prefixRest = new Int16Array(full.length + 1);
+    for (let i = 0; i < full.length; i++) {
+      prefixRest[i + 1] = prefixRest[i] + (full[i] === 1 ? 1 : 0);
+    }
+
     drows.forEach((dr, di) => {
+      // 若當日整天完全未在船，各欄位維持空白，不計違規
+      if (dr.offBoardType) {
+        dr.min24 = '';
+        dr.min7 = '';
+        dr.workH = '';
+        dr.otH = '';
+        dr.remark = '';
+        dr.hasViolation = false;
+        dr.slotV = Array.from({ length: 48 }, () => []);
+        return;
+      }
+
       const st = di * 48;
       dr.slotV = viol.slice(st, st + 48);
+
+      // 清除未在船格位的違規訊息
+      for (let s = 0; s < 48; s++) {
+        if (!dr.slotOnBoard[s]) {
+          dr.slotV[s] = [];
+        }
+      }
       dr.hasViolation = dr.slotV.some(a => a.length > 0);
 
-      let m24 = 24;
-      for (let w = 0; w < 48; w++) {
-        const ws = full.slice(st + w, st + w + 48);
-        if (ws.length === 48) {
-          const r = ws.filter(v => v === 1).length * 0.5;
-          if (r < m24) m24 = r;
-        }
-      }
-      dr.min24 = m24.toFixed(1);
+      // 當日格位於 full 陣列中的真實起始索引（必須計入上月回推 lb.length）
+      const dayStart = lb.length + di * 48;
 
-      let m7 = 168;
-      for (let w = 0; w < 48; w++) {
-        const ws = full.slice(st + w, st + w + 336);
-        if (ws.length === 336) {
-          const r = ws.filter(v => v === 1).length * 0.5;
-          if (r < m7) m7 = r;
-        }
+      let minRest24 = 24.0;
+      // 掃描涵蓋當日的所有 24 小時（48 格）視窗：依「最多兩段合計」計算各 24h 視窗之有效休息時數
+      const k24Min = Math.max(0, dayStart - 47);
+      const k24Max = Math.min(full.length - 48, dayStart + 47);
+      for (let k = k24Min; k <= k24Max; k++) {
+        const { top2Sum } = get24hRestPeriods(full, k);
+        if (top2Sum < minRest24) minRest24 = top2Sum;
       }
-      dr.min7 = m7.toFixed(1);
+      dr.min24 = minRest24.toFixed(1);
+
+      let minSlots7 = 336;
+      // 掃描涵蓋當日的所有 7 天（336 格）視窗：以 O(1) 前綴和快速計算
+      const k7Min = Math.max(0, dayStart - 335);
+      const k7Max = Math.min(full.length - 336, dayStart + 47);
+      for (let k = k7Min; k <= k7Max; k++) {
+        const rSlots = prefixRest[k + 336] - prefixRest[k];
+        if (rSlots < minSlots7) minSlots7 = rSlots;
+      }
+      dr.min7 = (minSlots7 * 0.5).toFixed(1);
     });
 
     return drows;
   }, [sim, rows, dailyData, allCrewOverrides, selYear, selMonth]);
+
+  const totalWorkHours = useMemo(() => {
+    return crewData.reduce((acc, dr) => acc + (dr.workH ? parseFloat(dr.workH) : 0), 0);
+  }, [crewData]);
+
+  const totalOtHours = useMemo(() => {
+    return crewData.reduce((acc, dr) => acc + (dr.otH ? parseFloat(dr.otH) : 0), 0);
+  }, [crewData]);
+
+  const totalMin24 = useMemo(() => {
+    return crewData.reduce((acc, dr) => acc + (dr.min24 ? parseFloat(dr.min24) : 0), 0);
+  }, [crewData]);
+
+  const totalMin7 = useMemo(() => {
+    return crewData.reduce((acc, dr) => acc + (dr.min7 ? parseFloat(dr.min7) : 0), 0);
+  }, [crewData]);
 
   const saveAll = () => {
     localStorage.setItem(aoKey, JSON.stringify(allCrewOverrides));
@@ -324,6 +398,26 @@ export const PartC: React.FC<PartCProps> = ({
             <Save className="size-3.5" />
             <span>儲存自訂</span>
           </Button>
+
+          {/* 3. 列印加班時數表 */}
+          <Button
+            size="sm"
+            onClick={() => setShowPrintOtModal(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+          >
+            <Printer className="size-3.5" />
+            <span>列印加班時數表</span>
+          </Button>
+
+          {/* 4. 列印船員休息時數紀錄表 */}
+          <Button
+            size="sm"
+            onClick={() => setShowPrintModal(true)}
+            className="bg-blue-700 hover:bg-blue-800 text-white font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+          >
+            <Printer className="size-3.5" />
+            <span>列印船員休息時數紀錄表</span>
+          </Button>
         </div>
       </header>
 
@@ -380,6 +474,23 @@ export const PartC: React.FC<PartCProps> = ({
             );
           })}
         </div>
+
+        {/* Selected Crew Monthly Summary */}
+        {sim && (
+          <div className="mt-3 flex items-center flex-wrap gap-x-4 gap-y-1.5 text-xs bg-slate-100/80 border border-slate-200 rounded-lg px-3 py-1.5">
+            <span className="font-bold text-slate-800">
+              當前船員：<span className="text-blue-700 font-extrabold">{sim.rank} {sim.name || sim.engName || '未命名'}</span>
+            </span>
+            <span className="text-slate-300 hidden sm:inline">|</span>
+            <span className="text-slate-600">
+              當月總工時：<strong className="font-mono text-slate-900 font-bold">{totalWorkHours.toFixed(1)}</strong> 小時
+            </span>
+            <span className="text-slate-300 hidden sm:inline">|</span>
+            <span className="text-slate-600">
+              當月超時工時：<strong className="font-mono text-amber-700 font-bold">{totalOtHours.toFixed(1)}</strong> 小時
+            </span>
+          </div>
+        )}
       </section>
 
       {/* Main Table */}
@@ -422,8 +533,12 @@ export const PartC: React.FC<PartCProps> = ({
               <th rowSpan={2} className="w-20 border-r border-slate-300 text-xs">
                 24h工時
               </th>
-              <th rowSpan={2} className="w-16 border-r border-slate-300 text-xs">
-                加班時
+              <th
+                rowSpan={2}
+                className="w-16 border-r border-slate-300 text-xs cursor-help"
+                title="超時工時計算規則：&#10;• 週日與國定假日：有工作全額計入超時工時&#10;• 週六：超過 4 小時之部分計為超時工時&#10;• 平日（週一至週五）：超過 8 小時之部分計為超時工時"
+              >
+                超時工時
               </th>
               <th rowSpan={2} className="w-20 border-r border-slate-300 text-xs">
                 任意24h休息
@@ -444,51 +559,71 @@ export const PartC: React.FC<PartCProps> = ({
             {crewData.map(dr => {
               const iHol = dr.isWeekend || dr.isCustomHoliday;
               const iRH = hoverRow === dr.rowKey;
-              const b24 = parseFloat(dr.min24) < 10;
-              const b7 = parseFloat(dr.min7) < 77;
+              const b24 = dr.min24 !== '' && parseFloat(dr.min24) < 10;
+              const b7 = dr.min7 !== '' && parseFloat(dr.min7) < 77;
+              const isOff = !!dr.offBoardType;
 
               return (
                 <tr
                   key={dr.rowKey}
                   className={cn(
                     'h-1 transition-colors duration-75',
-                    iRH ? 'bg-blue-100/70' : iHol ? 'bg-rose-50/40' : 'hover:bg-slate-50',
+                    isOff
+                      ? 'bg-slate-100/50 text-slate-400'
+                      : iRH
+                        ? 'bg-blue-100/70'
+                        : iHol
+                          ? 'bg-rose-50/40'
+                          : 'hover:bg-slate-50',
                   )}
                 >
                   <td
                     className={cn(
                       'border-r border-slate-300 font-bold text-xs',
-                      iHol ? 'text-rose-600' : 'text-slate-700',
+                      isOff ? 'text-slate-400' : iHol ? 'text-rose-600' : 'text-slate-700',
                     )}
                   >
-                    {dr.weekName}
+                    <span className="inline-flex items-center justify-center gap-0.5">
+                      {dr.weekName}
+                      {dr.isCustomHoliday && (
+                        <span
+                          className="text-[9px] px-1 py-0 rounded bg-rose-100 text-rose-700 border border-rose-300 font-bold leading-tight"
+                          title="國定假日（有工作全額計入超時工時）"
+                        >
+                          假
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="border-r border-slate-300 p-0 text-center w-7 bg-sky-50/20">
                     <input
                       type="checkbox"
+                      disabled={isOff}
                       checked={dr.deckRestAm}
                       onChange={e => updDeck(dr.rowKey, 'deckRestAm', e.target.checked)}
-                      className="w-3.5 h-3.5 rounded text-blue-600 cursor-pointer"
+                      className={cn("w-3.5 h-3.5 rounded text-blue-600", isOff ? "cursor-not-allowed opacity-30" : "cursor-pointer")}
                     />
                   </td>
                   <td className="border-r border-slate-300 p-0 text-center w-7 bg-sky-50/20">
                     <input
                       type="checkbox"
+                      disabled={isOff}
                       checked={dr.deckRestPm}
                       onChange={e => updDeck(dr.rowKey, 'deckRestPm', e.target.checked)}
-                      className="w-3.5 h-3.5 rounded text-blue-600 cursor-pointer"
+                      className={cn("w-3.5 h-3.5 rounded text-blue-600", isOff ? "cursor-not-allowed opacity-30" : "cursor-pointer")}
                     />
                   </td>
                   <td
                     className={cn(
                       'border-r border-slate-300 font-mono text-[11px] font-extrabold px-0.5',
-                      iHol ? 'text-rose-600' : 'text-slate-800',
+                      isOff ? 'text-slate-400' : iHol ? 'text-rose-600' : 'text-slate-800',
                     )}
                   >
                     {dr.displayLabel}
                     {dr.dateSuffix}
                   </td>
                   {Array.from({ length: 48 }, (_, s) => {
+                    const onBoard = dr.slotOnBoard[s];
                     const code = dr.final[s];
                     const base = dr.base[s];
                     const isW = !!code;
@@ -501,20 +636,32 @@ export const PartC: React.FC<PartCProps> = ({
                       color: 'bg-slate-50 text-slate-300',
                       name: code,
                     };
-                    const tip = [
-                      code ? `狀態: ${st.name || code}` : '狀態: 休息',
-                      hasE ? `⚠️ ${Array.from(new Set(se)).join(', ')}` : '',
-                    ]
-                      .filter(Boolean)
-                      .join('\n');
+
+                    let tip = '';
+                    if (!onBoard) {
+                      tip = dr.offBoardType === 'BEFORE_SIGN_ON' || (sim?.hasSignOn && s < 24)
+                        ? '上船前 (未在船)'
+                        : '下船後 (已離船)';
+                    } else {
+                      tip = [
+                        code ? `狀態: ${st.name || code}` : '狀態: 休息',
+                        hasE ? `⚠️ ${Array.from(new Set(se)).join(', ')}` : '',
+                      ]
+                        .filter(Boolean)
+                        .join('\n');
+                    }
 
                     return (
                       <td
                         key={s}
                         title={tip}
-                        onClick={() => cycleSlot(dr.rowKey, s, code, base)}
+                        onClick={() => {
+                          if (!onBoard) return;
+                          cycleSlot(dr.rowKey, s, code, base);
+                        }}
                         onContextMenu={e => {
                           e.preventDefault();
+                          if (!onBoard) return;
                           cancelSlot(dr.rowKey, s, code, base, isC);
                         }}
                         onMouseEnter={() => {
@@ -522,9 +669,13 @@ export const PartC: React.FC<PartCProps> = ({
                           setHoverSlot(s);
                         }}
                         className={cn(
-                          'p-0 text-[10px] font-black select-none cursor-pointer relative h-4 w-3.5 transition-all duration-75',
-                          isW ? st.color : 'bg-slate-50 text-slate-300',
-                          isCenter
+                          'p-0 text-[10px] font-black select-none relative h-4 w-3.5 transition-all duration-75',
+                          !onBoard
+                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                            : isW
+                              ? cn(st.color, 'cursor-pointer')
+                              : 'bg-slate-50 text-slate-300 cursor-pointer',
+                          isCenter && onBoard
                             ? 'ring-2 ring-blue-700 z-20 brightness-95'
                             : iRH || isCH
                               ? 'brightness-95 bg-blue-50/50'
@@ -537,7 +688,7 @@ export const PartC: React.FC<PartCProps> = ({
                         {hasE && (
                           <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-red-600 pointer-events-none z-10" />
                         )}
-                        {isC && (
+                        {isC && onBoard && (
                           <span className="absolute -top-1 -right-1 text-[6px] pointer-events-none">
                             ✏️
                           </span>
@@ -571,12 +722,16 @@ export const PartC: React.FC<PartCProps> = ({
                   <td className="border-r border-slate-300 px-1 relative">
                     <input
                       type="text"
-                      placeholder="說明"
+                      placeholder={isOff ? '' : '說明'}
+                      disabled={isOff}
                       value={dr.remark}
                       onChange={e => sim && chgRemark(sim.id, dr.rowKey, e.target.value)}
-                      className="w-full bg-transparent border-none text-xs px-1 py-0 focus:bg-white focus:ring-1 focus:ring-blue-400 rounded outline-none"
+                      className={cn(
+                        "w-full bg-transparent border-none text-xs px-1 py-0 rounded outline-none",
+                        isOff ? "cursor-not-allowed text-slate-300" : "focus:bg-white focus:ring-1 focus:ring-blue-400"
+                      )}
                     />
-                    {dr.hasCustomRemark && (
+                    {dr.hasCustomRemark && !isOff && (
                       <span className="absolute top-0 right-1 text-[9px] text-blue-600 pointer-events-none">
                         ✏️
                       </span>
@@ -586,8 +741,61 @@ export const PartC: React.FC<PartCProps> = ({
               );
             })}
           </tbody>
+          <tfoot className="bg-slate-100/90 font-bold border-t-2 border-slate-300 text-xs">
+            <tr className="h-8">
+              <td colSpan={4} className="border-r border-slate-300 text-center font-extrabold text-slate-800 bg-slate-200/60">
+                當月合計
+              </td>
+              <td colSpan={48} className="border-r border-slate-300 text-slate-400 font-normal">
+                -
+              </td>
+              <td className="border-r border-slate-300 font-mono font-black text-slate-900 bg-slate-200/40">
+                {totalWorkHours.toFixed(1)}
+              </td>
+              <td className="border-r border-slate-300 font-mono font-black text-amber-700 bg-amber-50">
+                {totalOtHours.toFixed(1)}
+              </td>
+              <td
+                className="border-r border-slate-300 font-mono font-black text-blue-900 bg-blue-50/50"
+                title={`當月任意 24h 休息加總：${totalMin24.toFixed(1)} 小時`}
+              >
+                {totalMin24.toFixed(1)}
+              </td>
+              <td
+                className="border-r border-slate-300 font-mono font-black text-indigo-900 bg-indigo-50/50"
+                title={`當月任意 7 天休息加總：${totalMin7.toFixed(1)} 小時`}
+              >
+                {totalMin7.toFixed(1)}
+              </td>
+              <td className="border-r border-slate-300 text-slate-400 font-normal">-</td>
+            </tr>
+          </tfoot>
         </table>
       </main>
+
+      {/* 列印船員休息時數紀錄表 (Appendix 98 雙面列印) 模態框 */}
+      <PrintRestHoursModal
+        open={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        selYear={selYear}
+        selMonth={selMonth}
+        crewList={crewList}
+        selectedCrewId={selCrew}
+        dailyData={dailyData}
+        allCrewOverrides={allCrewOverrides}
+      />
+
+      {/* 列印加班時數表模態框 */}
+      {showPrintOtModal && (
+        <PrintOvertimeModal
+          selYear={selYear}
+          selMonth={selMonth}
+          crewList={crewList}
+          dailyData={dailyData}
+          allCrewOverrides={allCrewOverrides}
+          onClose={() => setShowPrintOtModal(false)}
+        />
+      )}
     </div>
   );
 };

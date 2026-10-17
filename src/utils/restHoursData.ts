@@ -48,7 +48,7 @@ export const DEFAULT_GROUP_DEFINITIONS: GroupDef[] = [
   { id: 'g_6', code: '04', name: '04-08班', color: 'bg-indigo-600 text-white border-indigo-700' },
   { id: 'g_7', code: '08', name: '08-12班', color: 'bg-purple-600 text-white border-purple-700' },
   { id: 'g_8', code: '12', name: '12-04班', color: 'bg-rose-600 text-white border-rose-700' },
-  { id: 'g_9', code: '自1', name: '自訂作業1', color: 'bg-cyan-700 text-white border-cyan-800' },
+  { id: 'g_9', code: '廚', name: '大廚專用', color: 'bg-cyan-700 text-white border-cyan-800' },
   { id: 'g_10', code: '自2', name: '自訂作業2', color: 'bg-slate-700 text-white border-slate-800' },
 ];
 
@@ -173,13 +173,13 @@ export const DEFAULT_CREW_LIST: CrewMember[] = [
     shiftChanges: [],
   },
   {
-    id: 'c_12', groups: [], rank: 'COOK', name: '', engName: '',
+    id: 'c_12', groups: ['g_9'], rank: 'COOK', name: '', engName: '',
     watchKeeping: 'N', maneuveringMode: 'NONE',
     hasSignOn: false, signOnDate: '', signOnHour: '08', signOnMin: '00',
     hasSignOff: false, signOffDate: '', signOffHour: '12', signOffMin: '00',
     seaNoWork: false, portNoWork: false,
-    dutyShifts: [makeDutyShift('06', '00', '08', '00'), makeDutyShift('10', '00', '13', '00'), makeDutyShift('16', '00', '19', '00')],
-    workingShifts: [makeDutyShift('06', '00', '08', '00'), makeDutyShift('10', '00', '13', '00'), makeDutyShift('16', '00', '19', '00')],
+    dutyShifts: [makeDutyShift('06', '00', '08', '00'), makeDutyShift('10', '00', '13', '00'), makeDutyShift('15', '30', '18', '30')],
+    workingShifts: [makeDutyShift('06', '00', '08', '00'), makeDutyShift('10', '00', '13', '00'), makeDutyShift('15', '30', '18', '30')],
     shiftChanges: [],
   },
 ];
@@ -219,3 +219,4 @@ export const DEFAULT_SHIP_INFO: ShipInfo = {
   ],
   engineersOnCallRanks: ['2E', '3E', '4/E'],
 };
+
